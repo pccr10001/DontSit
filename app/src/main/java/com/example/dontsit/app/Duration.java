@@ -2,9 +2,6 @@ package com.example.dontsit.app;
 
 import java.util.Date;
 
-/**
- * Created by IDIC on 2015/12/1.
- */
 public class Duration {
     private Date StartTime;
     private Integer Time;
@@ -32,5 +29,10 @@ public class Duration {
 
     public void setTime(Integer time) {
         Time = time;
+    }
+
+    @Override
+    public String toString() {
+        return StartTime + ", " + Time + " seconds";
     }
 }

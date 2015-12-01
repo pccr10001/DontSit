@@ -2,12 +2,9 @@ package com.example.dontsit.app;
 
 import java.util.Date;
 
-/**
- * Created by IDIC on 2015/12/1.
- */
 public class CushionState {
     private String MAC;
-    private Integer LastTimeDuration;
+    private Integer LastTimeDuration ;
     private Date LastNotifyTime;
     private Date LastConnectTime;
     private boolean IsSeated;
@@ -58,5 +55,11 @@ public class CushionState {
 
     public void setSeated(boolean seated) {
         IsSeated = seated;
+    }
+
+    @Override
+    public String toString() {
+        return MAC + ", " + LastTimeDuration + ", "
+                + LastNotifyTime + ", " + LastConnectTime + ", " + isSeated();
     }
 }

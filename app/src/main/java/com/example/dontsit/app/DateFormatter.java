@@ -5,9 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Created by IDIC on 2015/12/1.
- */
 public class DateFormatter {
 
     private static SimpleDateFormat formatter =
@@ -15,5 +12,9 @@ public class DateFormatter {
 
     public static Date parse(String date) throws ParseException {
         return formatter.parse(date);
+    }
+
+    public static String format(Date date) throws ParseException {
+        return formatter.format(date);
     }
 }
