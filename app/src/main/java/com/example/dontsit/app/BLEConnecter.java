@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.support.v7.app.AppCompatActivity;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -26,6 +27,9 @@ public class BLEConnecter {
     private List<ScanFilter> filters;
     private ScanSettings settings;
     private int ScanMode = ScanSettings.SCAN_MODE_LOW_POWER;
+    private BluetoothDevice Target_Device;
+    private String Target_MAC;
+    private HashSet<BluetoothDevice> devices = new HashSet<BluetoothDevice>();
 
     public BLEConnecter(AppCompatActivity parent) {
         this.parent = parent;
@@ -58,15 +62,20 @@ public class BLEConnecter {
                 .build();
     }
 
+    public void setScanMode(int mode) {
+        ScanMode = mode;
+    }
+
     private void initFilters() {
         filters = new ArrayList<ScanFilter>();
     }
 
     private void setTarget(String mac) {
+        Target_MAC = mac;
         filters.add(new ScanFilter.Builder().setDeviceAddress(mac).build());
     }
 
-    private void StartOrStopScanning(boolean IsStarted) {
+    private void ScanWith(boolean IsStarted) {
         if (scanner == null) {
             initBLEScanner();
         }
@@ -78,6 +87,10 @@ public class BLEConnecter {
             mScanning = false;
             scanner.stopScan(mLeScanCallback);
         }
+    }
+
+    private void initBluetoothGatt() {
+        if (mBluetoothGatt == null) mBluetoothGatt = Target_Device.connectGatt(parent, false, mBluetoothGattCallback);
     }
 
     private ScanCallback mLeScanCallback = new ScanCallback() {
@@ -94,11 +107,44 @@ public class BLEConnecter {
 
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-
+            if (mScanning) {
+                devices.add(result.getDevice());
+                ((BLEConnectable) parent).ScanResultThenDo();
+            }
         }
     };
 
     private BluetoothGattCallback mBluetoothGattCallback = new BluetoothGattCallback() {
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+        }
+
+        @Override
+        public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorRead(gatt, descriptor, status);
+        }
+
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorWrite(gatt, descriptor, status);
+        }
+
+        @Override
+        public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
+            super.onReliableWriteCompleted(gatt, status);
+        }
+
+        @Override
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            super.onReadRemoteRssi(gatt, rssi, status);
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            super.onMtuChanged(gatt, mtu, status);
+        }
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, int status) {
@@ -113,6 +159,9 @@ public class BLEConnecter {
         @Override
         public void onConnectionStateChange(final BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
+            if (newState == BluetoothGatt.STATE_CONNECTED) {
+                ((BLEConnectable) parent).ConnectThenDo();
+            }
         }
 
         @Override
