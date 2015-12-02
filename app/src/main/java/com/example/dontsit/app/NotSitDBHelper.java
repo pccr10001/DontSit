@@ -4,9 +4,6 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-/**
- * Created by IDIC on 2015/12/1.
- */
 public class NotSitDBHelper extends SQLiteOpenHelper {
 
     // 資料庫名稱
