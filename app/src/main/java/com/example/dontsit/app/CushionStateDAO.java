@@ -98,7 +98,6 @@ public class CushionStateDAO {
     }
 
     // 讀取所有記事資料
-    @Deprecated
     public List<CushionState> getAll() throws ParseException {
         List<CushionState> result = new ArrayList<CushionState>();
         Cursor cursor = db.query(
@@ -162,7 +161,7 @@ public class CushionStateDAO {
     }
 
     public void generate() throws ParseException {
-        CushionState test = new CushionState("AA:BB:CC:DD:EE:FF");
+        CushionState test = new CushionState("00:15:83:00:3E:95");
         test.setLastConnectTime(Calendar.getInstance().getTime());
         test.setLastNotifyTime(Calendar.getInstance().getTime());
         test.setLastTimeDuration(0);
