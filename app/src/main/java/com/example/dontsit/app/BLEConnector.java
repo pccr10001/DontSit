@@ -12,7 +12,6 @@ public class BLEConnector {
     private Context mCallback;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mBluetoothGatt;
-    private final static int REQUEST_ENABLE_BT = 1;
     private boolean mScanning = false;
     private BluetoothLeScanner scanner;
     private List<ScanFilter> filters;
@@ -115,8 +114,13 @@ public class BLEConnector {
 
         @Override
         public void onConnectionStateChange(final BluetoothGatt gatt, int status, int newState) {
-            if (newState == BluetoothGatt.STATE_CONNECTED) {
-                ((BLEConnectible) mCallback).ConnectThenDoWith();
+            switch (newState) {
+                case BluetoothGatt.STATE_CONNECTED:
+                    ((BLEConnectible) mCallback).ConnectThenDoWith();
+                    break;
+                case BluetoothGatt.STATE_DISCONNECTED:
+                    ((BLEConnectible) mCallback).DisConnectThenDoWith();
+                    break;
             }
         }
 

@@ -41,6 +41,11 @@ public class CushionUpdateService extends Service implements BLEConnectible{
         connector.DiscoverServices();
     }
 
+    @Override
+    public void DisConnectThenDoWith() {
+        SaveDataWithSeatedIs(false);
+    }
+
 
     @Override
     public void DiscoveredServicesThenDo(BluetoothGatt gatt) {
@@ -59,17 +64,7 @@ public class CushionUpdateService extends Service implements BLEConnectible{
 
     @Override
     public void ReceiveNotificationThenDoWith(byte[] bytes) {
-        Date now = Calendar.getInstance().getTime();
-        Long time = now.getTime() - state.getLastNotifyTime().getTime();
-
-        duration.setStartTime(state.getLastNotifyTime());
-        duration.setTime(time.intValue());
-
-        state.setLastTimeDuration(time.intValue());
-        state.setLastNotifyTime(now);
-        state.setSeated(BytesToHex(bytes).equals(Hold));
-
-        DebugTools.Log(state.toString());
+        SaveDataWithSeatedIs(BytesToHex(bytes).equals(Hold));
     }
 
     @Override
@@ -98,9 +93,32 @@ public class CushionUpdateService extends Service implements BLEConnectible{
         return super.onStartCommand(intent, flags, startId);
     }
 
+    private void SaveDataWithSeatedIs(Boolean IsSeated) {
+        if (state.isSeated() != IsSeated) {
+            Date now = Calendar.getInstance().getTime();
+            Long time = now.getTime() - state.getLastNotifyTime().getTime();
+
+            duration.setStartTime(state.getLastNotifyTime());
+            duration.setTime(time.intValue());
+
+            state.setLastTimeDuration(time.intValue());
+            state.setLastNotifyTime(now);
+            state.setSeated(IsSeated);
+
+            try {
+                StateDAO.update(state);
+                LogDAO.insert(duration);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     @Override
     public void onDestroy() {
         connector.DisConnect();
+        if (state.isSeated())
+            SaveDataWithSeatedIs(false);
         super.onDestroy();
     }
 
