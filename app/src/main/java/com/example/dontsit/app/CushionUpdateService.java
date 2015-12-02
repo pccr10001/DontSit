@@ -4,6 +4,7 @@ import android.app.Service;
 import android.bluetooth.*;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 
 import java.text.ParseException;
@@ -12,6 +13,11 @@ import java.util.Date;
 import java.util.UUID;
 
 public class CushionUpdateService extends Service implements BLEConnectible{
+
+    // Binder given to clients
+    private final IBinder binder = new LocalBinder();
+    // Registered callbacks
+    private DataAlwaysChanged serviceCallbacks;
 
     private BLEConnector connector;
     private String target_mac;
@@ -32,6 +38,7 @@ public class CushionUpdateService extends Service implements BLEConnectible{
         if (device.getAddress().equals(target_mac)) {
             state.setMAC(target_mac);
             connector.Connect(device);
+            connector.ScanWith(false);
         }
     }
 
@@ -69,7 +76,7 @@ public class CushionUpdateService extends Service implements BLEConnectible{
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
     }
 
     @Override
@@ -79,7 +86,8 @@ public class CushionUpdateService extends Service implements BLEConnectible{
         StateDAO = new CushionStateDAO(context);
         LogDAO = new DurationLogDAO(context);
         try {
-            target_mac = StateDAO.getAll().get(0).getMAC();
+            state = StateDAO.getAll().get(0);
+            target_mac = state.getMAC();
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -105,6 +113,9 @@ public class CushionUpdateService extends Service implements BLEConnectible{
             state.setLastNotifyTime(now);
             state.setSeated(IsSeated);
 
+            DebugTools.Log(state);
+            DebugTools.Log(duration);
+
             try {
                 StateDAO.update(state);
                 LogDAO.insert(duration);
@@ -127,5 +138,17 @@ public class CushionUpdateService extends Service implements BLEConnectible{
         for (byte aByte : bytes)
             hexChars.append(Integer.toHexString(aByte));
         return hexChars.toString();
+    }
+
+    // Class used for the client Binder.
+    public class LocalBinder extends Binder implements IBinder{
+        CushionUpdateService getService() {
+            // Return this instance of MyService so clients can call public methods
+            return CushionUpdateService.this;
+        }
+    }
+
+    public void setCallbacks(DataAlwaysChanged callbacks) {
+        serviceCallbacks = callbacks;
     }
 }

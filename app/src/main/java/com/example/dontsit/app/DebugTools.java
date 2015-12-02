@@ -15,9 +15,9 @@ public class DebugTools {
         }
     }
 
-    public static void Log(String message) {
+    public static void Log(Object message) {
         if (isDebug) {
-            Log.i(TAG, message);
+            Log.i(TAG, message.toString());
         }
     }
 

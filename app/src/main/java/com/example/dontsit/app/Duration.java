@@ -33,6 +33,6 @@ public class Duration {
 
     @Override
     public String toString() {
-        return StartTime + ", " + Time + " seconds";
+        return StartTime + ", " + Time + " milliseconds";
     }
 }

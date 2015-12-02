@@ -82,7 +82,7 @@ public class BLEConnector {
 
     private void initBluetoothGatt() {
         if (mBluetoothGatt == null)
-            mBluetoothGatt = Target_Device.connectGatt(mCallback, false, mBluetoothGattCallback);
+            mBluetoothGatt = Target_Device.connectGatt(mCallback, true, mBluetoothGattCallback);
     }
 
     private ScanCallback mLeScanCallback = new ScanCallback() {

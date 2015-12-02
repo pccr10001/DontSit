@@ -1,8 +1,12 @@
 package com.example.dontsit.app;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,9 +14,11 @@ import android.view.MenuItem;
 import java.text.ParseException;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DataAlwaysChanged{
 
+    private CushionUpdateService mService;
     private Boolean isDataCompelete = false;
+    private boolean bound = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initService() {
         Intent intent = new Intent(this, CushionUpdateService.class);
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         startService(intent);
     }
 
@@ -45,6 +52,22 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, CushionUpdateService.class);
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
     }
 
     @Override
@@ -62,6 +85,12 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void notifyDataChanged() {
+        //call every activity which use database;
+        DebugTools.Log("NotifyDataChanged");
+    }
+
     class initDataTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -75,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                     if (stateDAO.getCount() == 0)
                         stateDAO.generate();
                     if (logDAO.getCount() == 0)
-                        logDAO.generate();
+                        ;//logDAO.generate();
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
@@ -110,5 +139,24 @@ public class MainActivity extends AppCompatActivity {
             isDataCompelete = true;
         }
     }
+
+    /** Callbacks for service binding, passed to bindService() */
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder iBinder) {
+            // cast the IBinder and get MyService instance
+            CushionUpdateService.LocalBinder binder = (CushionUpdateService.LocalBinder) iBinder;
+            mService = binder.getService();
+            mService.setCallbacks(MainActivity.this); // register
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mService.setCallbacks(null); // unregister
+            bound = false;
+        }
+    };
 
 }
