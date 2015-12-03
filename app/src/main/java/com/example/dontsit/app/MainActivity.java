@@ -1,33 +1,86 @@
 package com.example.dontsit.app;
 
+import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import java.text.ParseException;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements DataAlwaysChanged{
+public class MainActivity extends AppCompatActivity implements DataAlwaysChanged {
 
     private CushionUpdateService mService;
     private Boolean isDataCompelete = false;
     private boolean bound = false;
+    private final static int REQUEST_ENABLE_BT = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        checkBLE();
         initDebugMode();
-        initService();
+    }
 
+    private void progressToNextInit(){
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        while (adapter == null || !adapter.isEnabled()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                System.exit(1);
+            }
+        }
+        initService();
         new initDataTask().execute();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == RESULT_OK) {
+                progressToNextInit();
+            }
+        }
+    }
+
+    private void checkBLE() {
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            showMessage("系統錯誤", "不支援低耗藍牙");
+            finish();
+        }
+
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null || !adapter.isEnabled()) {
+            showMessage("系統錯誤", "藍牙服務未開啟");
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
+    }
+
+    private void showMessage(String title, String message) {
+        LayoutInflater inflater = LayoutInflater.from(MainActivity.this);
+        View alert_message_view = inflater.inflate(R.layout.message_dialog, null);
+        JustifyTextView message_view = (JustifyTextView)
+                alert_message_view.findViewById(R.id.InfoAlertJustifyText);
+        message_view.setText(message);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title);
+        builder.setView(alert_message_view);
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @Override
@@ -140,7 +193,9 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         }
     }
 
-    /** Callbacks for service binding, passed to bindService() */
+    /**
+     * Callbacks for service binding, passed to bindService()
+     */
     private ServiceConnection serviceConnection = new ServiceConnection() {
 
         @Override

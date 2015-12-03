@@ -63,7 +63,8 @@ public class CushionUpdateService extends Service implements BLEConnectible{
 //            for (BluetoothGattCharacteristic characteristic : service.getCharacteristics())
 //                DebugTools.Log(characteristic.getUuid().toString());
 //        }
-        BluetoothGattCharacteristic characteristic = gatt.getService(UUID.fromString(target_service))
+        BluetoothGattCharacteristic characteristic =
+                gatt.getService(UUID.fromString(target_service))
                 .getCharacteristic(UUID.fromString(target_characteristic));
         gatt.setCharacteristicNotification(characteristic, true);
 
