@@ -7,11 +7,14 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 import com.example.dontsit.app.AchievementActivity.AchievementActivity;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
 import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
@@ -26,49 +29,30 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     private CushionUpdateService mService;
     private Boolean isDataCompelete = false;
     private boolean bound = false;
-    private boolean enable = false;
     private final static int REQUEST_ENABLE_BT = 1;
     private Animation animation_clicked;
+    private MenuItem action_operation;
+    private String mMac;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initDebugMode();
-        initData();
+        initCushionState();
+        //initData();
         animation_clicked = AnimationUtils.loadAnimation(this, R.anim.image_click);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        checkBLE();
-        Intent intent = new Intent(this, CushionUpdateService.class);
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
-        }
-    }
-
-    private void progressToNextInit() {
-        initService();
     }
 
     private void checkBLE() {
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            showRequestMessage("系統錯誤", "不支援低耗藍牙", null);
+            showRequestMessage(getString(R.string.system_error), getString(R.string.notSupportBLE), null);
             finish();
         }
 
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null || !adapter.isEnabled()) {
-            showRequestMessage("系統錯誤", "藍牙服務未開啟，需開啟才能繼續執行。", new DialogInterface.OnClickListener() {
+            showRequestMessage(getString(R.string.system_error), getString(R.string.enableBLE), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -76,23 +60,33 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
                 }
             });
         } else {
-            enable = true;
-            progressToNextInit();
+            initService();
         }
     }
 
-    private void showRequestMessage(String title, String message, DialogInterface.OnClickListener NegativeButtonListener) {
+    private void showRequestMessage(String title, String message,
+                                    DialogInterface.OnClickListener NegativeButtonListener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(title);
         builder.setMessage(message);
         if (NegativeButtonListener != null)
-            builder.setNegativeButton("確定", NegativeButtonListener);
+            builder.setNegativeButton(getString(R.string.yes), NegativeButtonListener);
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        mService.stopScan();
+    }
+
+    @Override
     protected void onDestroy() {
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
         Intent intent = new Intent(this, CushionUpdateService.class);
         stopService(intent);
         super.onDestroy();
@@ -111,10 +105,50 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         DebugTools.initTools(getResources());
     }
 
+    private void initCushionState() {
+        try {
+            CushionStateDAO dao = new CushionStateDAO(this);
+            List<CushionState> states;
+            states = dao.getAll();
+            if (states.size() > 0)
+                mMac = states.get(0).getMAC();
+            dao.close();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    BaseAdapter adapter;
+    ListView devices;
+    AlertDialog dialog;
+
+    private void initDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.ScanDialog));
+        View view = getLayoutInflater().inflate(R.layout.dialog_scan, null);
+        devices = (ListView) view.findViewById(R.id.ScanListView);
+        adapter = new ScanListViewAdapter(this, mService.getResults());
+        devices.setAdapter(adapter);
+        builder.setView(view);
+        dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(true);
+        dialog.show();
+    }
+
+    public void chooseMac(String mac) {
+        mMac = mac;
+        if (mService != null) {
+//            DebugTools.Log("Choose Device");
+            mService.connect(mMac);
+            action_operation.setTitle(getString(R.string.connect));
+            dialog.cancel();
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        action_operation = menu.findItem(R.id.action_operation);
         return true;
     }
 
@@ -126,7 +160,18 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_operation) {
+            if (item.getTitle().equals(getString(R.string.scan))) {
+                checkBLE();
+                if (mMac == null && mService != null)
+                    initDialog();
+            } else if (item.getTitle().equals(getString(R.string.connect))
+                    && mService != null) {
+                mService.connect(mMac);
+            } else if (item.getTitle().equals(getString(R.string.disconnect))
+                    && mService != null) {
+                mService.disconnect();
+            }
             return true;
         }
 
@@ -137,6 +182,37 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     public void notifyDataChanged() {
         //call every activity which use database;
         DebugTools.Log("NotifyDataChanged");
+    }
+
+    @Override
+    public void notifyConnect() {
+        DebugTools.Log("Connect Cushion");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                action_operation.setTitle(getString(R.string.disconnect));
+            }
+        });
+    }
+
+    @Override
+    public void notifyDisconnect() {
+        DebugTools.Log("Disconnect Cushion");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                action_operation.setTitle(getString(R.string.connect));
+            }
+        });
+    }
+
+    @Override
+    public void notifyScanResult() {
+        DebugTools.Log("NotifyDataSetChanged()");
+        DebugTools.Log(adapter == null);
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     private void initData() {
@@ -175,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
                     }
                 }
             }
+            stateDAO.close();
+            logDAO.close();
         }
         isDataCompelete = true;
     }
@@ -191,6 +269,8 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
             mService = binder.getService();
             mService.setCallbacks(MainActivity.this); // register
             bound = true;
+            if (mMac == null)
+                initDialog();
         }
 
         @Override
