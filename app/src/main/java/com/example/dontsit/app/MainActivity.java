@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.*;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -13,6 +12,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import com.example.dontsit.app.AchievementActivity.AchievementActivity;
+import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
+import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
+import com.example.dontsit.app.SettingActivity.SettingActivity;
 import com.example.dontsit.app.SitTimeActivity.SitTimeActivity;
 
 import java.text.ParseException;
@@ -197,10 +200,33 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         }
     };
 
+    public void goCushionStatePage(View view) {
+        view.startAnimation(animation_clicked);
+        Intent intent = new Intent(this, CushionStateActivity.class);
+        startActivity(intent);
+    }
+
     public void goSitTimePage(View view) {
         view.startAnimation(animation_clicked);
         Intent intent = new Intent(this, SitTimeActivity.class);
         startActivity(intent);
     }
 
+    public void goAlarmClockPage(View view) {
+        view.startAnimation(animation_clicked);
+        Intent intent = new Intent(this, AlarmClockActivity.class);
+        startActivity(intent);
+    }
+
+    public void goAchievementPage(View view) {
+        view.startAnimation(animation_clicked);
+        Intent intent = new Intent(this, AchievementActivity.class);
+        startActivity(intent);
+    }
+
+    public void goSettingPage(View view) {
+        view.startAnimation(animation_clicked);
+        Intent intent = new Intent(this, SettingActivity.class);
+        startActivity(intent);
+    }
 }

@@ -2,6 +2,7 @@ package com.example.dontsit.app;
 
 import android.content.res.Resources;
 import android.util.Log;
+import com.example.dontsit.app.R;
 
 public class DebugTools {
 
