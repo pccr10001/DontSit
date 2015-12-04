@@ -32,6 +32,8 @@
                 android:gravity="start">
 
             <ImageView
+                    android:id="@+id/SitTimeActivity"
+                    android:onClick="goSitTimePage"
                     android:background="@color/Yellow"
                     android:padding="10dp"
                     android:src="@drawable/temp"

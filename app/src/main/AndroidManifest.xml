@@ -18,6 +18,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+                android:screenOrientation="portrait"
+                android:name=".SitTimeActivity.SitTimeActivity"
+                android:parentActivityName=".MainActivity"
+                android:label="Chart1">
+        </activity>
         <service android:name=".CushionUpdateService"/>
     </application>
 

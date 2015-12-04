@@ -12,7 +12,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
 
-public class CushionUpdateService extends Service implements BLEConnectible{
+public class CushionUpdateService extends Service implements BLEConnectible {
 
     // Binder given to clients
     private final IBinder binder = new LocalBinder();
@@ -65,8 +65,9 @@ public class CushionUpdateService extends Service implements BLEConnectible{
 //        }
         BluetoothGattCharacteristic characteristic =
                 gatt.getService(UUID.fromString(target_service))
-                .getCharacteristic(UUID.fromString(target_characteristic));
-        gatt.setCharacteristicNotification(characteristic, true);
+                        .getCharacteristic(UUID.fromString(target_characteristic));
+        if (characteristic != null)
+            gatt.setCharacteristicNotification(characteristic, true);
 
     }
 
@@ -103,16 +104,15 @@ public class CushionUpdateService extends Service implements BLEConnectible{
     }
 
     private void SaveDataWithSeatedIs(Boolean IsSeated) {
-        if (state.isSeated() != IsSeated) {
-            Date now = Calendar.getInstance().getTime();
-            Long time = now.getTime() - state.getLastNotifyTime().getTime();
+        //DebugTools.Log(IsSeated);
+        Date now = Calendar.getInstance().getTime();
 
+        if (state.isSeated() && !IsSeated) {
+            Long time = now.getTime() - state.getLastNotifyTime().getTime();
             duration.setStartTime(state.getLastNotifyTime());
             duration.setTime(time.intValue());
 
             state.setLastTimeDuration(time.intValue());
-            state.setLastNotifyTime(now);
-            state.setSeated(IsSeated);
 
             DebugTools.Log(state);
             DebugTools.Log(duration);
@@ -124,6 +124,9 @@ public class CushionUpdateService extends Service implements BLEConnectible{
                 e.printStackTrace();
             }
         }
+
+        state.setLastNotifyTime(now);
+        state.setSeated(IsSeated);
     }
 
     @Override
@@ -142,7 +145,7 @@ public class CushionUpdateService extends Service implements BLEConnectible{
     }
 
     // Class used for the client Binder.
-    public class LocalBinder extends Binder implements IBinder{
+    public class LocalBinder extends Binder implements IBinder {
         CushionUpdateService getService() {
             // Return this instance of MyService so clients can call public methods
             return CushionUpdateService.this;

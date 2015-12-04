@@ -8,7 +8,7 @@ import java.util.Locale;
 public class DateFormatter {
 
     private static SimpleDateFormat formatter =
-            new SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.TAIWAN);
+            new SimpleDateFormat("MM/dd HH", Locale.TAIWAN);
 
     public static Date parse(String date) throws ParseException {
         return formatter.parse(date);

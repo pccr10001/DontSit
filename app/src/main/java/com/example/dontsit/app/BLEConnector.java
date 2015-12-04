@@ -54,6 +54,7 @@ public class BLEConnector {
     public void ScanWith(boolean bool) {
         if (scanner == null) {
             initBLEScanner();
+            return;
         }
 
         if (bool) {
@@ -73,7 +74,8 @@ public class BLEConnector {
     }
 
     public void DisConnect() {
-        mBluetoothGatt.disconnect();
+        if (mBluetoothGatt != null)
+            mBluetoothGatt.disconnect();
     }
 
     public void DiscoverServices() {

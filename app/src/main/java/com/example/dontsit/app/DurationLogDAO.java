@@ -24,7 +24,7 @@ public class DurationLogDAO {
     // 使用上面宣告的變數建立表格的SQL指令
     public static final String CREATE_TABLE =
             "CREATE TABLE " + TABLE_NAME + " (" +
-                    KEY_ID + " TEXT PRIMARY KEY, " +
+                    KEY_ID + " INTEGER PRIMARY KEY, " +
                     Duration_COLUMN + " INTEGER NOT NULL)";
 
     // 資料庫物件
@@ -47,7 +47,7 @@ public class DurationLogDAO {
 
         // 加入ContentValues物件包裝的新增資料
         // 第一個參數是欄位名稱， 第二個參數是欄位的資料
-        cv.put(KEY_ID, DateFormatter.format(duration.getStartTime()));
+        cv.put(KEY_ID, duration.getStartTime().getTime());
         cv.put(Duration_COLUMN, duration.getTime());
 
         // 第一個參數是表格名稱
@@ -67,12 +67,12 @@ public class DurationLogDAO {
 
         // 加入ContentValues物件包裝的修改資料
         // 第一個參數是欄位名稱， 第二個參數是欄位的資料
-        cv.put(KEY_ID, duration.getStartTime().toString());
+        cv.put(KEY_ID, duration.getStartTime().getTime());
         cv.put(Duration_COLUMN, duration.getTime());
 
         // 設定修改資料的條件為編號
         // 格式為「欄位名稱＝資料」
-        String where = KEY_ID + "= '" + duration.getStartTime() + "'";
+        String where = KEY_ID + "= " + duration.getStartTime() + "";
 
         // 執行修改資料並回傳修改的資料數量是否成功
         return db.update(TABLE_NAME, cv, where, null) > 0;
@@ -81,7 +81,7 @@ public class DurationLogDAO {
     // 刪除參數指定編號的資料
     public boolean delete(String mac) {
         // 設定條件為編號，格式為「欄位名稱=資料」
-        String where = KEY_ID + "= '" + mac + "'";
+        String where = KEY_ID + "= " + mac + "";
         // 刪除指定編號資料並回傳刪除是否成功
         return db.delete(TABLE_NAME, where, null) > 0;
     }
@@ -100,11 +100,30 @@ public class DurationLogDAO {
         return result;
     }
 
+
+    public List<Duration> getBetween(Date date1, Date date2) throws ParseException {
+        // 準備回傳結果用的物件
+        List<Duration> result = new ArrayList<Duration>();
+        // 使用編號為查詢條件
+        String where = KEY_ID + "> " + date1.getTime() + " AND " + KEY_ID + "< " + date2.getTime();
+        // 執行查詢
+        Cursor cursor = db.query(
+                TABLE_NAME, null, where, null, null, null, null, null);
+
+        // 如果有查詢結果
+        while (cursor.moveToNext()) {
+            result.add(getRecord(cursor));
+        }
+
+        cursor.close();
+        return result;
+    }
+
     public Duration get(Date date) throws ParseException {
         // 準備回傳結果用的物件
         Duration duration = null;
         // 使用編號為查詢條件
-        String where = KEY_ID + "= '" + date + "'";
+        String where = KEY_ID + "= " + date + "";
         // 執行查詢
         Cursor result = db.query(
                 TABLE_NAME, null, where, null, null, null, null, null);
@@ -112,8 +131,7 @@ public class DurationLogDAO {
         // 如果有查詢結果
         while (result.moveToNext()) {
             // 讀取包裝一筆資料的物件
-            if (getRecord(result).getStartTime().equals(date))
-                duration = getRecord(result);
+            duration = getRecord(result);
         }
 
         // 關閉Cursor物件
@@ -127,7 +145,7 @@ public class DurationLogDAO {
         // 準備回傳結果用的物件
         Duration result = new Duration();
 
-        result.setStartTime(DateFormatter.parse(cursor.getString(0)));
+        result.setStartTime(new Date(cursor.getInt(0)));
         result.setTime(cursor.getInt(1));
 
         // 回傳結果
