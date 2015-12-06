@@ -1,8 +1,9 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import com.example.dontsit.app.AlarmClockActivity.AlarmClockDAO;
 
 public class NotSitDBHelper extends SQLiteOpenHelper {
 
@@ -34,6 +35,7 @@ public class NotSitDBHelper extends SQLiteOpenHelper {
         // 建立應用程式需要的表格
         db.execSQL(CushionStateDAO.CREATE_TABLE);
         db.execSQL(DurationLogDAO.CREATE_TABLE);
+        db.execSQL(AlarmClockDAO.CREATE_TABLE);
     }
 
     @Override
@@ -41,6 +43,7 @@ public class NotSitDBHelper extends SQLiteOpenHelper {
         // 刪除原有的表格
         db.execSQL("DROP TABLE IF EXISTS " + CushionStateDAO.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + DurationLogDAO.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AlarmClockDAO.TABLE_NAME);
         // 呼叫onCreate建立新版的表格
         onCreate(db);
     }

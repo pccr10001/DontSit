@@ -1,4 +1,4 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 import android.content.Context;
 import android.graphics.Canvas;

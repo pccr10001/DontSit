@@ -1,4 +1,4 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 import android.bluetooth.BluetoothDevice;
 import android.view.LayoutInflater;
@@ -7,7 +7,12 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import com.example.dontsit.app.MainActivity;
+import com.example.dontsit.app.R;
 
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class ScanListViewAdapter extends BaseAdapter {
@@ -23,16 +28,10 @@ public class ScanListViewAdapter extends BaseAdapter {
     }
 
     private static class ViewHolder {
-        View ConvertView;
         ImageView CushionView;
         TextView MacView;
         TextView NameView;
-
-
-        public ViewHolder() {
-        }
     }
-
 
     @Override
     public int getCount() {

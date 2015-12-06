@@ -1,4 +1,4 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 import android.annotation.TargetApi;
 import android.bluetooth.*;

@@ -10,5 +10,10 @@
     <string name="system_error">系統錯誤</string>
     <string name="notSupportBLE">不支援低耗藍牙</string>
     <string name="enableBLE">藍牙服務未開啟，需開啟才能繼續執行。</string>
+    <string name="NotifyCushionStateDataKey">CushionState</string>
+    <string name="EveryTimeType">重複</string>
+    <string name="OneTimeType">單次</string>
+    <string name="add">新增</string>
+    <string name="delete">刪除</string>
     <bool name="debug">true</bool>
 </resources>

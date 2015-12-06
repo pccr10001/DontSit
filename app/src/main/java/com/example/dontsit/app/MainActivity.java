@@ -17,22 +17,30 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import com.example.dontsit.app.AchievementActivity.AchievementActivity;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
+import com.example.dontsit.app.AlarmClockActivity.AlarmService;
+import com.example.dontsit.app.Common.*;
 import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
 import com.example.dontsit.app.SettingActivity.SettingActivity;
 import com.example.dontsit.app.SitTimeActivity.SitTimeActivity;
+import com.rey.material.app.SimpleDialog;
 
 import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements DataAlwaysChanged {
 
-    private CushionUpdateService mService;
+    private CushionUpdateService mBleService;
+    private AlarmService mAlarmService;
     private Boolean isDataCompelete = false;
-    private boolean bound = false;
+    private boolean BLEServiceBound = false;
+    private boolean AlarmServiceBound = false;
     private final static int REQUEST_ENABLE_BT = 1;
     private Animation animation_clicked;
     private MenuItem action_operation;
     private String mMac;
+    private CushionStateDAO stateDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,51 +60,77 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
 
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null || !adapter.isEnabled()) {
-            showRequestMessage(getString(R.string.system_error), getString(R.string.enableBLE), new DialogInterface.OnClickListener() {
+            showRequestMessage(getString(R.string.system_error), getString(R.string.enableBLE), new DialogAction() {
                 @Override
-                public void onClick(DialogInterface dialog, int which) {
+                public void Action() {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
             });
         } else {
-            initService();
+            initBLEService();
+            initAlarmService();
         }
     }
 
-    private void showRequestMessage(String title, String message,
-                                    DialogInterface.OnClickListener NegativeButtonListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(title);
-        builder.setMessage(message);
-        if (NegativeButtonListener != null)
-            builder.setNegativeButton(getString(R.string.yes), NegativeButtonListener);
-        AlertDialog dialog = builder.create();
-        dialog.show();
+    private interface DialogAction {
+        void Action();
+    }
+
+    private void showRequestMessage(String title, String message, final DialogAction listener) {
+        final SimpleDialog builder = new SimpleDialog(this, R.style.SimpleDialog);
+        builder.messageTextAppearance(R.styleable.SimpleDialog_di_messageTextAppearance)
+                .message(message)
+                .title(title)
+                .negativeAction(getString(R.string.yes))
+                .negativeActionClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        listener.Action();
+                        builder.cancel();
+                    }
+                })
+                .show();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mService.stopScan();
+        if (mBleService != null)
+            mBleService.stopScan();
     }
 
     @Override
     protected void onDestroy() {
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
+        if (BLEServiceBound) {
+            unbindService(BluetoothServiceConnection);
+            BLEServiceBound = false;
+        }
+        if (AlarmServiceBound) {
+            unbindService(AlarmServiceConnection);
+            AlarmServiceBound = false;
         }
         Intent intent = new Intent(this, CushionUpdateService.class);
+        stopService(intent);
+        intent = new Intent(this, AlarmService.class);
         stopService(intent);
         super.onDestroy();
     }
 
-    private void initService() {
-        if (mService == null) {
-            DebugTools.Log("initService");
+    private void initBLEService() {
+        if (mBleService == null) {
+            DebugTools.Log("initBLEService");
             Intent intent = new Intent(this, CushionUpdateService.class);
-            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+            bindService(intent, BluetoothServiceConnection, Context.BIND_AUTO_CREATE);
+            startService(intent);
+        }
+    }
+
+    private void initAlarmService() {
+        if (mAlarmService == null) {
+            DebugTools.Log("initAlarmService");
+            Intent intent = new Intent(this, AlarmService.class);
+            bindService(intent, AlarmServiceConnection, Context.BIND_AUTO_CREATE);
             startService(intent);
         }
     }
@@ -126,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.ScanDialog));
         View view = getLayoutInflater().inflate(R.layout.dialog_scan, null);
         devices = (ListView) view.findViewById(R.id.ScanListView);
-        adapter = new ScanListViewAdapter(this, mService.getResults());
+        adapter = new ScanListViewAdapter(this, mBleService.getResults());
         devices.setAdapter(adapter);
         builder.setView(view);
         dialog = builder.create();
@@ -136,9 +170,25 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
 
     public void chooseMac(String mac) {
         mMac = mac;
-        if (mService != null) {
+        if (mBleService != null) {
 //            DebugTools.Log("Choose Device");
-            mService.connect(mMac);
+            CushionState state = new CushionState();
+            state.setMAC(mac);
+            Date now = Calendar.getInstance().getTime();
+            state.setLastConnectTime(now);
+            state.setLastNotifyTime(now);
+            state.setLastTimeDuration(0);
+            state.setSeated(false);
+            stateDAO = new CushionStateDAO(this);
+            try {
+                if (stateDAO.getCount() == 0)
+                    stateDAO.insert(state);
+                else
+                    stateDAO.update(state);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            mBleService.connect(mMac);
             action_operation.setTitle(getString(R.string.connect));
             dialog.cancel();
         }
@@ -149,6 +199,8 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         action_operation = menu.findItem(R.id.action_operation);
+        if (mMac != null)
+            action_operation.setTitle(getString(R.string.connect));
         return true;
     }
 
@@ -161,27 +213,21 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_operation) {
+            checkBLE();
             if (item.getTitle().equals(getString(R.string.scan))) {
-                checkBLE();
-                if (mMac == null && mService != null)
+                if (mMac == null && mBleService != null)
                     initDialog();
             } else if (item.getTitle().equals(getString(R.string.connect))
-                    && mService != null) {
-                mService.connect(mMac);
+                    && mBleService != null) {
+                mBleService.connect(mMac);
             } else if (item.getTitle().equals(getString(R.string.disconnect))
-                    && mService != null) {
-                mService.disconnect();
+                    && mBleService != null) {
+                mBleService.disconnect();
             }
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void notifyDataChanged() {
-        //call every activity which use database;
-        DebugTools.Log("NotifyDataChanged");
     }
 
     @Override
@@ -260,23 +306,37 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     /**
      * Callbacks for service binding, passed to bindService()
      */
-    private ServiceConnection serviceConnection = new ServiceConnection() {
+    private ServiceConnection BluetoothServiceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder iBinder) {
             // cast the IBinder and get MyService instance
             CushionUpdateService.LocalBinder binder = (CushionUpdateService.LocalBinder) iBinder;
-            mService = binder.getService();
-            mService.setCallbacks(MainActivity.this); // register
-            bound = true;
+            mBleService = binder.getService();
+            mBleService.setCallbacks(MainActivity.this); // register
+            BLEServiceBound = true;
             if (mMac == null)
                 initDialog();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
-            mService.setCallbacks(null); // unregister
-            bound = false;
+            mBleService.setCallbacks(null); // unregister
+            BLEServiceBound = false;
+        }
+    };
+
+    private ServiceConnection AlarmServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            AlarmService.LocalBinder binder = (AlarmService.LocalBinder) service;
+            mAlarmService = binder.getService();
+            AlarmServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            AlarmServiceBound = false;
         }
     };
 

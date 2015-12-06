@@ -1,4 +1,4 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 import android.annotation.TargetApi;
 import android.app.Service;
@@ -28,7 +28,7 @@ public class CushionUpdateService extends Service implements BLEConnectible {
     private CushionState state = new CushionState();
     private Duration duration = new Duration();
     //private final String Idle = "30";
-    private final String Hold = "31";
+    private final String Hold = "1";
     private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
@@ -73,7 +73,8 @@ public class CushionUpdateService extends Service implements BLEConnectible {
     public void ConnectThenDoWith() {
         state.setLastConnectTime(Calendar.getInstance().getTime());
         connector.DiscoverServices();
-        serviceCallbacks.notifyConnect();
+        if (serviceCallbacks != null)
+            serviceCallbacks.notifyConnect();
     }
 
     @Override
@@ -99,15 +100,17 @@ public class CushionUpdateService extends Service implements BLEConnectible {
             service = gatt.getService(UUID.fromString(target_service));
         if (service != null)
             characteristic = service.getCharacteristic(UUID.fromString(target_characteristic));
-        if (characteristic != null)
+        if (characteristic != null) {
             gatt.setCharacteristicNotification(characteristic, true);
+            characteristic.setValue(intToByteArray(1));
+            gatt.writeCharacteristic(characteristic);
+        }
 
     }
 
     @Override
     public void ReceiveNotificationThenDoWith(byte[] bytes) {
         SaveDataWithSeatedIs(BytesToHex(bytes).equals(Hold));
-        serviceCallbacks.notifyDataChanged();
     }
 
     @Override
@@ -135,14 +138,12 @@ public class CushionUpdateService extends Service implements BLEConnectible {
         connector.ScanWith(true);
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
-    }
-
     private void SaveDataWithSeatedIs(Boolean IsSeated) {
-        //DebugTools.Log(IsSeated);
+//        DebugTools.Log(IsSeated);
         Date now = Calendar.getInstance().getTime();
+
+        StateDAO = new CushionStateDAO(this);
+        LogDAO = new DurationLogDAO(this);
 
         if (state.isSeated() && !IsSeated) {
             Long time = now.getTime() - state.getLastNotifyTime().getTime();
@@ -155,20 +156,24 @@ public class CushionUpdateService extends Service implements BLEConnectible {
             DebugTools.Log(duration);
 
             try {
-                StateDAO.update(state);
                 LogDAO.insert(duration);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
         }
+        if (state.getLastTimeDuration() == null)
+            state.setLastTimeDuration(0);
 
         state.setLastNotifyTime(now);
         state.setSeated(IsSeated);
+        StateDAO.update(state);
     }
 
     @Override
     public void onDestroy() {
         disconnect();
+        StateDAO.close();
+        LogDAO.close();
         super.onDestroy();
     }
 
@@ -179,9 +184,18 @@ public class CushionUpdateService extends Service implements BLEConnectible {
         return hexChars.toString();
     }
 
+    private static byte[] intToByteArray(int a) {
+        byte[] ret = new byte[4];
+        ret[3] = (byte) (a & 0xFF);
+        ret[2] = (byte) ((a >> 8) & 0xFF);
+        ret[1] = (byte) ((a >> 16) & 0xFF);
+        ret[0] = (byte) ((a >> 24) & 0xFF);
+        return ret;
+    }
+
     // Class used for the client Binder.
     public class LocalBinder extends Binder implements IBinder {
-        CushionUpdateService getService() {
+        public CushionUpdateService getService() {
             // Return this instance of MyService so clients can call public methods
             return CushionUpdateService.this;
         }

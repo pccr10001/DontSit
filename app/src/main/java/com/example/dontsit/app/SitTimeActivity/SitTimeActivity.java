@@ -1,15 +1,15 @@
 package com.example.dontsit.app.SitTimeActivity;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import com.example.dontsit.app.*;
-import com.example.dontsit.app.DateFormatter;
-import com.example.dontsit.app.DebugTools;
-import com.example.dontsit.app.Duration;
-import com.example.dontsit.app.DurationLogDAO;
+import com.example.dontsit.app.Common.*;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
@@ -17,23 +17,36 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class SitTimeActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener{
+public class SitTimeActivity extends AppCompatActivity
+        implements SeekBar.OnSeekBarChangeListener, YAxisValueFormatter {
 
     private BarChart SitTimeChart;
     private SeekBar DaySeekBar;
     private TextView DayTextView;
     private Typeface typeface = Typeface.DEFAULT;
 
+    private CushionDatabaseChangedReceiver mReceiver = new CushionDatabaseChangedReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            if (DaySeekBar != null)
+                onProgressChanged(DaySeekBar, DaySeekBar.getProgress(), false);
+        }
+    };
+
+    private IntentFilter filter = new IntentFilter(CushionDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sittime);
+
         SitTimeChart = (BarChart) findViewById(R.id.sit_time_chart);
         DaySeekBar = (SeekBar) findViewById(R.id.day_seekBar);
         DayTextView = (TextView) findViewById(R.id.day_textView);
@@ -47,15 +60,25 @@ public class SitTimeActivity extends AppCompatActivity implements SeekBar.OnSeek
         SitTimeChart.setPinchZoom(false);
         SitTimeChart.setDrawGridBackground(false);
 
+        YAxisValueFormatter custom = new DefaultAxisValueFormatter();
+
         XAxis xAxis = SitTimeChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setTypeface(typeface);
         xAxis.setDrawGridLines(false);
         xAxis.setSpaceBetweenLabels(2);
 
+        YAxis rightAxis = SitTimeChart.getAxisRight();
+        rightAxis.setDrawGridLines(false);
+        rightAxis.setTypeface(typeface);
+        rightAxis.setLabelCount(8, false);
+        rightAxis.setValueFormatter(custom);
+        rightAxis.setSpaceTop(15f);
+
         YAxis leftAxis = SitTimeChart.getAxisLeft();
         leftAxis.setTypeface(typeface);
         leftAxis.setLabelCount(8, false);
+        leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
 
@@ -74,47 +97,77 @@ public class SitTimeActivity extends AppCompatActivity implements SeekBar.OnSeek
         setData(7);
     }
 
+    @Override
+    protected void onStart() {
+        registerReceiver(mReceiver, filter);
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        unregisterReceiver(mReceiver);
+        super.onStop();
+    }
+
+    private DecimalFormat mFormat= new DecimalFormat("###,###,###,##0.0");
+
+    public String getFormattedValue(float value, YAxis yAxis) {
+        return mFormat.format(value);
+    }
+
+    private class ChartData {
+        String date;
+        int time = 0;
+
+        public ChartData(String date, int time) {
+            this.date = date;
+            this.time = time;
+        }
+    }
+
     private void setData(int range) {
 
         DurationLogDAO logDAO = new DurationLogDAO(this);
 
         try {
             Calendar calendar1 = Calendar.getInstance(), calendar2 = Calendar.getInstance();
+            calendar1.set(Calendar.HOUR_OF_DAY, 23);
+            calendar1.set(Calendar.MINUTE, 59);
+            calendar1.set(Calendar.SECOND, 59);
             calendar1.add(Calendar.DAY_OF_YEAR, -range);
 
             List<Duration> list = logDAO.getBetween(calendar1.getTime(), calendar2.getTime());
 
             if (list.size() == 0) return;
 
+            List<ChartData> datas = new ArrayList<ChartData>();
             ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
 
-            DebugTools.Log(list);
+            Duration first = list.get(0);
+            String LastDurationDayHour = DateFormatter.short_format(first.getStartTime());
+            datas.add(new ChartData(LastDurationDayHour, first.getTime()));
 
-            String LastDurationDayHour = "";
-            boolean IsSameHour = true;
-            int time = 0, count = 0;
-            for (Duration duration : list) {
+            boolean IsSameHour;
+            ChartData temp = datas.get(0);
+            for (int i = 1; i < list.size(); i++) {
+                Duration duration = list.get(i);
+                IsSameHour = DateFormatter.short_format(duration.getStartTime()).equals(LastDurationDayHour);
+                LastDurationDayHour = DateFormatter.short_format(duration.getStartTime());
                 if (IsSameHour)
-                    time += duration.getTime();
+                    temp.time += duration.getTime();
                 else {
-                    //DebugTools.Log(LastDurationDayHour + " " + (time / 1000) + " " + count);
-                    yVals1.add(new BarEntry(time / 1000, count++));
-                    time = duration.getTime();
+//                    DebugTools.Log(LastDurationDayHour + " " + (temp.time / 1000));
+                    datas.add(new ChartData(LastDurationDayHour, duration.getTime()));
+                    temp = datas.get(datas.size() - 1);
                 }
-                IsSameHour = DateFormatter.format(duration.getStartTime()).equals(LastDurationDayHour);
-                LastDurationDayHour = DateFormatter.format(duration.getStartTime());
-            }
-            if (time != 0) {
-                //DebugTools.Log("---" + LastDurationDayHour + " " + (time / 1000) + " " + count);
-                yVals1.add(new BarEntry(time / 1000, count));
             }
 
             ArrayList<String> xVals = new ArrayList<String>();
-            for (int i = 0; i <= count; i++) {
-                calendar1.setTime(list.get(0).getStartTime());
-                calendar1.add(Calendar.HOUR, i);
-                xVals.add(DateFormatter.format(calendar1.getTime()));
-                //DebugTools.Log(DateFormatter.format(calendar1.getTime()));
+            for (int i = 0; i < datas.size(); i++) {
+                temp = datas.get(i);
+                yVals1.add(new BarEntry(temp.time / 1000, i));
+                xVals.add(temp.date);
+                DebugTools.Log(DateFormatter.short_format(calendar1.getTime()));
             }
 
             BarDataSet set1 = new BarDataSet(yVals1, "坐下時間(秒)");
@@ -126,6 +179,7 @@ public class SitTimeActivity extends AppCompatActivity implements SeekBar.OnSeek
             BarData data = new BarData(xVals, dataSets);
             data.setValueTextSize(10f);
             data.setValueTypeface(typeface);
+            data.setValueFormatter(new DefaultAxisValueFormatter());
 
             SitTimeChart.setData(data);
         } catch (ParseException e) {

@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -14,7 +15,6 @@
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -30,7 +30,7 @@
                 android:parentActivityName=".MainActivity"
                 android:label="Chart1">
         </activity>
-        <service android:name=".CushionUpdateService"/>
+        <service android:name=".Common.CushionUpdateService"/>
         <activity
                 android:screenOrientation="portrait"
                 android:name=".AlarmClockActivity.AlarmClockActivity"
@@ -38,7 +38,7 @@
                 android:label="Chart1">
         </activity>
         <service
-                android:name=".AlarmService"
+                android:name=".AlarmClockActivity.AlarmService"
                 android:enabled="true" />
         <activity
                 android:screenOrientation="portrait"
@@ -52,6 +52,20 @@
                 android:parentActivityName=".MainActivity"
                 android:label="Chart1">
         </activity>
+        <receiver
+                android:name=".Common.CushionDatabaseChangedReceiver"
+                android:enabled="true" >
+            <intent-filter>
+                <action android:name="com.example.dontsit.app.Common.DATABASE_CHANGED"></action>
+            </intent-filter>
+        </receiver>
+        <receiver
+                android:name=".AlarmClockActivity.AlarmDatabaseChangedReceiver"
+                android:enabled="true" >
+            <intent-filter>
+                <action android:name="com.example.dontsit.app.AlarmClockActivity.DATABASE_CHANGED"></action>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

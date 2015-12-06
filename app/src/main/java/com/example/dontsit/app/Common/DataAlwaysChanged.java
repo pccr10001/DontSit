@@ -1,7 +1,6 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
 public interface DataAlwaysChanged {
-    void notifyDataChanged();
     void notifyConnect();
     void notifyDisconnect();
     void notifyScanResult();

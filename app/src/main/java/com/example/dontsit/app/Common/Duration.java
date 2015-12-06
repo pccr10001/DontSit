@@ -1,5 +1,6 @@
-package com.example.dontsit.app;
+package com.example.dontsit.app.Common;
 
+import java.text.ParseException;
 import java.util.Date;
 
 public class Duration {
@@ -33,6 +34,11 @@ public class Duration {
 
     @Override
     public String toString() {
-        return StartTime + ", " + Time + " milliseconds";
+        try {
+            return DateFormatter.format(StartTime) + ", " + Time + " milliseconds";
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }
