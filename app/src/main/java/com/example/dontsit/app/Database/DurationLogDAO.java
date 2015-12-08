@@ -1,9 +1,12 @@
-package com.example.dontsit.app.Common;
+package com.example.dontsit.app.Database;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import com.example.dontsit.app.Common.DateFormatter;
+import com.example.dontsit.app.Common.DebugTools;
+import com.example.dontsit.app.MainActivity;
 
 import java.text.ParseException;
 import java.util.ArrayList;

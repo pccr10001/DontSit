@@ -11,7 +11,7 @@ import java.util.List;
 
 public class BLEConnector {
 
-    private Context mCallback;
+    private BLEConnectible mCallback;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mBluetoothGatt;
     private boolean mScanning = false;
@@ -25,7 +25,7 @@ public class BLEConnector {
     private ScanCallback mLeScanCallback;
     private BluetoothGattCallback mBluetoothGattCallback;
 
-    public BLEConnector(BluetoothAdapter adapter, Context connectible) {
+    public BLEConnector(BluetoothAdapter adapter, BLEConnectible connectible) {
         mBluetoothAdapter = adapter;
         mCallback = connectible;
         initScanCallBack();
@@ -70,7 +70,7 @@ public class BLEConnector {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 if (mScanning) {
-                    ((BLEConnectible) mCallback).ScanResultThenDoWith(result.getDevice());
+                    mCallback.ScanResultThenDoWith(result.getDevice());
                 }
             }
         };
@@ -81,14 +81,14 @@ public class BLEConnector {
 
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-                ((BLEConnectible) mCallback).ReceiveNotificationThenDoWith(characteristic.getValue());
+                mCallback.ReceiveNotificationThenDoWith(characteristic.getValue());
             }
 
             @Override
             public void onConnectionStateChange(final BluetoothGatt gatt, int status, int newState) {
+                mCallback.ConnectionStateChangedThenDo(newState);
                 switch (newState) {
                     case BluetoothGatt.STATE_CONNECTED:
-                        ((BLEConnectible) mCallback).ConnectThenDoWith();
                         DebugTools.Log("Connected");
                         break;
                     case BluetoothGatt.STATE_CONNECTING:
@@ -98,7 +98,6 @@ public class BLEConnector {
                         DebugTools.Log("DisConnecting");
                         break;
                     case BluetoothGatt.STATE_DISCONNECTED:
-                        ((BLEConnectible) mCallback).DisConnectThenDoWith();
                         DebugTools.Log("DisConnected");
                         break;
                 }
@@ -106,10 +105,8 @@ public class BLEConnector {
 
             @Override
             public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-                ((BLEConnectible) mCallback).DiscoveredServicesThenDo(gatt);
+                mCallback.DiscoveredServicesThenDo(gatt);
             }
-
-
         };
     }
 
@@ -160,7 +157,7 @@ public class BLEConnector {
 
     private void initBluetoothGatt() {
         if (mBluetoothGatt == null)
-            mBluetoothGatt = Target_Device.connectGatt(mCallback, true, mBluetoothGattCallback);
+            mBluetoothGatt = Target_Device.connectGatt((Context) mCallback, false, mBluetoothGattCallback);
     }
 
 }

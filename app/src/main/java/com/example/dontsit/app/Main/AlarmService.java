@@ -1,4 +1,4 @@
-package com.example.dontsit.app.AlarmClockActivity;
+package com.example.dontsit.app.Main;
 
 import android.app.AlarmManager;
 import android.app.AlertDialog;
@@ -12,13 +12,16 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.WindowManager;
-import com.example.dontsit.app.Common.CushionDatabaseChangedReceiver;
-import com.example.dontsit.app.Common.CushionStateDAO;
+import com.example.dontsit.app.AlarmClockActivity.AlarmClock;
+import com.example.dontsit.app.AlarmClockActivity.CountDownTimerWithPause;
+import com.example.dontsit.app.Common.NotSitSharedPreferences;
+import com.example.dontsit.app.Database.AlarmClockDAO;
+import com.example.dontsit.app.Database.AlarmDatabaseChangedReceiver;
+import com.example.dontsit.app.Database.CushionDatabaseChangedReceiver;
 import com.example.dontsit.app.Common.DebugTools;
 import com.example.dontsit.app.R;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class AlarmService extends Service {
     private List<Timer> timers = new ArrayList<Timer>();
     private Boolean IsSeated = false;
     private MediaPlayer player;
+    private NotSitSharedPreferences preferences;
 
     @Override
     public void onCreate() {
@@ -41,15 +45,11 @@ public class AlarmService extends Service {
         clocks = alarmClockDAO.getAll();
         for (final AlarmClock clock : clocks)
             timers.add(new Timer(clock));
-        CushionStateDAO dao = new CushionStateDAO(this);
-        if (dao.getCount() > 0)
-            try {
-                IsSeated = dao.getAll().get(0).isSeated();
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+        preferences = new NotSitSharedPreferences(this);
+        String IsSeated = preferences.get(NotSitSharedPreferences.IsSeated);
+        if (!IsSeated.equals(""))
+            this.IsSeated = IsSeated.equals("1");
         alarmClockDAO.close();
-        dao.close();
         registerReceiver(mCushionDatabaseReceiver, mCushionFilter);
         registerReceiver(mAlarmDatabaseReceiver, mAlarmFilter);
         player = MediaPlayer.create(this, R.raw.oldalarmclock);
@@ -117,9 +117,9 @@ public class AlarmService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         unregisterReceiver(mCushionDatabaseReceiver);
         unregisterReceiver(mAlarmDatabaseReceiver);
-        super.onDestroy();
     }
 
     private CushionDatabaseChangedReceiver mCushionDatabaseReceiver = new CushionDatabaseChangedReceiver() {

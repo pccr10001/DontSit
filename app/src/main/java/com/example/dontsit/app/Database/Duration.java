@@ -1,4 +1,6 @@
-package com.example.dontsit.app.Common;
+package com.example.dontsit.app.Database;
+
+import com.example.dontsit.app.Common.DateFormatter;
 
 import java.text.ParseException;
 import java.util.Date;

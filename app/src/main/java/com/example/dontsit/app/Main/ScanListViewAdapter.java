@@ -1,4 +1,4 @@
-package com.example.dontsit.app.Common;
+package com.example.dontsit.app.Main;
 
 import android.bluetooth.BluetoothDevice;
 import android.view.LayoutInflater;
@@ -10,9 +10,6 @@ import android.widget.TextView;
 import com.example.dontsit.app.MainActivity;
 import com.example.dontsit.app.R;
 
-import java.text.ParseException;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 public class ScanListViewAdapter extends BaseAdapter {

@@ -2,9 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.dontsit.app" >
 
+    <permission android:name="com.example.dontsit.SEND_CushionState"/>
+    <permission android:name="com.example.dontsit.SEND_AlarmClock"/>
+
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="com.example.dontsit.SEND_CushionState"/>
+    <uses-permission android:name="com.example.dontsit.SEND_AlarmClock"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -21,49 +26,50 @@
         <activity
                 android:screenOrientation="portrait"
                 android:name=".CushionStateActivity.CushionStateActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="Chart1">
+                android:label="CushionState">
         </activity>
         <activity
                 android:screenOrientation="portrait"
                 android:name=".SitTimeActivity.SitTimeActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="Chart1">
+                android:label="SitTime">
         </activity>
-        <service android:name=".Common.CushionUpdateService"/>
+
+        <service android:name=".Main.CushionUpdateService"/>
+
         <activity
                 android:screenOrientation="portrait"
                 android:name=".AlarmClockActivity.AlarmClockActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="Chart1">
+                android:label="AlarmClock">
         </activity>
+
         <service
-                android:name=".AlarmClockActivity.AlarmService"
+                android:name=".Main.AlarmService"
                 android:enabled="true" />
+
         <activity
                 android:screenOrientation="portrait"
                 android:name=".AchievementActivity.AchievementActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="Chart1">
+                android:label="Achievement">
         </activity>
         <activity
                 android:screenOrientation="portrait"
                 android:name=".SettingActivity.SettingActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="Chart1">
+                android:label="Setting">
         </activity>
         <receiver
-                android:name=".Common.CushionDatabaseChangedReceiver"
+                android:name=".Database.CushionDatabaseChangedReceiver"
+                android:permission="com.example.dontsit.SEND_CushionState"
                 android:enabled="true" >
             <intent-filter>
-                <action android:name="com.example.dontsit.app.Common.DATABASE_CHANGED"></action>
+                <action android:name="com.example.dontsit.app.Common.DATABASE_CHANGED"/>
             </intent-filter>
         </receiver>
         <receiver
-                android:name=".AlarmClockActivity.AlarmDatabaseChangedReceiver"
+                android:name=".Database.AlarmDatabaseChangedReceiver"
+                android:permission="com.example.dontsit.SEND_AlarmClock"
                 android:enabled="true" >
             <intent-filter>
-                <action android:name="com.example.dontsit.app.AlarmClockActivity.DATABASE_CHANGED"></action>
+                <action android:name="com.example.dontsit.app.AlarmClockActivity.DATABASE_CHANGED"/>
             </intent-filter>
         </receiver>
     </application>

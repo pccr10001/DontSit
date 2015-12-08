@@ -1,4 +1,4 @@
-package com.example.dontsit.app.Common;
+package com.example.dontsit.app.Database;
 
 import java.util.Date;
 

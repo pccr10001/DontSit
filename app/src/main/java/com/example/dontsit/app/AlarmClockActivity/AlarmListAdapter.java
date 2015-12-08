@@ -8,6 +8,7 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import com.example.dontsit.app.Database.AlarmClockDAO;
 import com.example.dontsit.app.R;
 
 import java.util.ArrayList;
@@ -16,15 +17,13 @@ import java.util.concurrent.TimeUnit;
 
 public class AlarmListAdapter extends BaseAdapter {
 
-    private List<AlarmClock> clocks = new ArrayList<AlarmClock>();
+    private List<AlarmClock> clocks;
     private LayoutInflater inflater;
     private AlarmClockDAO alarmClockDAO;
-    private Context context;
 
     public AlarmListAdapter(Context context, List<AlarmClock> clocks) {
         inflater = LayoutInflater.from(context);
         alarmClockDAO = new AlarmClockDAO(context);
-        this.context = context;
         this.clocks = clocks;
     }
 

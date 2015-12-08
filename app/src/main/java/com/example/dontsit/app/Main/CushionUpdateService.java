@@ -1,4 +1,4 @@
-package com.example.dontsit.app.Common;
+package com.example.dontsit.app.Main;
 
 import android.annotation.TargetApi;
 import android.app.Service;
@@ -8,6 +8,10 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import com.example.dontsit.app.Common.*;
+import com.example.dontsit.app.Database.CushionState;
+import com.example.dontsit.app.Database.Duration;
+import com.example.dontsit.app.Database.DurationLogDAO;
 
 import java.text.ParseException;
 import java.util.*;
@@ -23,13 +27,13 @@ public class CushionUpdateService extends Service implements BLEConnectible {
     private String target_mac;
     private String target_service = "0000ffe0-0000-1000-8000-00805f9b34fb";
     private String target_characteristic = "0000ffe1-0000-1000-8000-00805f9b34fb";
-    private CushionStateDAO StateDAO;
     private DurationLogDAO LogDAO;
     private CushionState state = new CushionState();
     private Duration duration = new Duration();
     //private final String Idle = "30";
     private final String Hold = "1";
     private List<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
+    private NotSitSharedPreferences preferences;
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     @Override
@@ -69,21 +73,6 @@ public class CushionUpdateService extends Service implements BLEConnectible {
         return devices;
     }
 
-    @Override
-    public void ConnectThenDoWith() {
-        state.setLastConnectTime(Calendar.getInstance().getTime());
-        connector.DiscoverServices();
-        if (serviceCallbacks != null)
-            serviceCallbacks.notifyConnect();
-    }
-
-    @Override
-    public void DisConnectThenDoWith() {
-        SaveDataWithSeatedIs(false);
-        serviceCallbacks.notifyDisconnect();
-    }
-
-
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     @Override
     public void DiscoveredServicesThenDo(BluetoothGatt gatt) {
@@ -109,6 +98,15 @@ public class CushionUpdateService extends Service implements BLEConnectible {
     }
 
     @Override
+    public void ConnectionStateChangedThenDo(int state) {
+        serviceCallbacks.notifyConnectStateChanged(state);
+        if (state == BluetoothGatt.STATE_CONNECTED) {
+            connector.DiscoverServices();
+            this.state.setLastConnectTime(Calendar.getInstance().getTime());
+        }
+    }
+
+    @Override
     public void ReceiveNotificationThenDoWith(byte[] bytes) {
         SaveDataWithSeatedIs(BytesToHex(bytes).equals(Hold));
     }
@@ -123,18 +121,28 @@ public class CushionUpdateService extends Service implements BLEConnectible {
     public void onCreate() {
         super.onCreate();
         Context context = getApplicationContext();
-        StateDAO = new CushionStateDAO(context);
         LogDAO = new DurationLogDAO(context);
         connector = new BLEConnector(BluetoothAdapter.getDefaultAdapter(), this);
-        try {
-            if (StateDAO.getAll().size() != 0) {
-                state = StateDAO.getAll().get(0);
-                target_mac = state.getMAC();
-                connector.setTarget_MAC(target_mac);
+        preferences = new NotSitSharedPreferences(this);
+        String mac = preferences.get(NotSitSharedPreferences.MAC);
+        state = new CushionState();
+        if (!mac.equals("")) {
+            state.setMAC(mac);
+            state.setLastTimeDuration(
+                    Integer.valueOf(preferences.get(NotSitSharedPreferences.LastTimeDuration)));
+            try {
+                state.setLastConnectTime(
+                        DateFormatter.parse((preferences.get(NotSitSharedPreferences.LastConnectTime))));
+                state.setLastNotifyTime(
+                        DateFormatter.parse((preferences.get(NotSitSharedPreferences.LastNotifyTime))));
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
-        } catch (ParseException e) {
-            e.printStackTrace();
+            state.setSeated(preferences.get(NotSitSharedPreferences.IsSeated).equals("1"));
+            target_mac = state.getMAC();
+            connector.setTarget_MAC(target_mac);
         }
+
         connector.ScanWith(true);
     }
 
@@ -142,7 +150,6 @@ public class CushionUpdateService extends Service implements BLEConnectible {
 //        DebugTools.Log(IsSeated);
         Date now = Calendar.getInstance().getTime();
 
-        StateDAO = new CushionStateDAO(this);
         LogDAO = new DurationLogDAO(this);
 
         if (state.isSeated() && !IsSeated) {
@@ -166,13 +173,23 @@ public class CushionUpdateService extends Service implements BLEConnectible {
 
         state.setLastNotifyTime(now);
         state.setSeated(IsSeated);
-        StateDAO.update(state);
+        try {
+            preferences.set(NotSitSharedPreferences.LastConnectTime,
+                    DateFormatter.format(state.getLastConnectTime()));
+            preferences.set(NotSitSharedPreferences.LastNotifyTime,
+                    DateFormatter.format(state.getLastNotifyTime()));
+            preferences.set(NotSitSharedPreferences.LastTimeDuration,
+                    String.valueOf(state.getLastTimeDuration()));
+            preferences.set(NotSitSharedPreferences.IsSeated,
+                    state.isSeated() ? "1" : "0");
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onDestroy() {
-        disconnect();
-        StateDAO.close();
+//        disconnect();
         LogDAO.close();
         super.onDestroy();
     }

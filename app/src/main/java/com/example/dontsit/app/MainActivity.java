@@ -2,7 +2,11 @@ package com.example.dontsit.app;
 
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.content.*;
+import android.bluetooth.BluetoothGatt;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -17,9 +21,14 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import com.example.dontsit.app.AchievementActivity.AchievementActivity;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
-import com.example.dontsit.app.AlarmClockActivity.AlarmService;
-import com.example.dontsit.app.Common.*;
+import com.example.dontsit.app.Common.DateFormatter;
+import com.example.dontsit.app.Common.DebugTools;
+import com.example.dontsit.app.Common.NotSitSharedPreferences;
 import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
+import com.example.dontsit.app.Main.AlarmService;
+import com.example.dontsit.app.Main.CushionUpdateService;
+import com.example.dontsit.app.Main.DataAlwaysChanged;
+import com.example.dontsit.app.Main.ScanListViewAdapter;
 import com.example.dontsit.app.SettingActivity.SettingActivity;
 import com.example.dontsit.app.SitTimeActivity.SitTimeActivity;
 import com.rey.material.app.SimpleDialog;
@@ -27,25 +36,24 @@ import com.rey.material.app.SimpleDialog;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements DataAlwaysChanged {
 
     private CushionUpdateService mBleService;
     private AlarmService mAlarmService;
-    private Boolean isDataCompelete = false;
     private boolean BLEServiceBound = false;
     private boolean AlarmServiceBound = false;
     private final static int REQUEST_ENABLE_BT = 1;
     private Animation animation_clicked;
     private MenuItem action_operation;
     private String mMac;
-    private CushionStateDAO stateDAO;
+    private NotSitSharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        preferences = new NotSitSharedPreferences(this);
         initDebugMode();
         initCushionState();
         //initData();
@@ -140,16 +148,8 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     }
 
     private void initCushionState() {
-        try {
-            CushionStateDAO dao = new CushionStateDAO(this);
-            List<CushionState> states;
-            states = dao.getAll();
-            if (states.size() > 0)
-                mMac = states.get(0).getMAC();
-            dao.close();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        String temp = preferences.get(NotSitSharedPreferences.MAC);
+        mMac = temp.equals("") ? null : temp;
     }
 
     BaseAdapter adapter;
@@ -172,22 +172,16 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         mMac = mac;
         if (mBleService != null) {
 //            DebugTools.Log("Choose Device");
-            CushionState state = new CushionState();
-            state.setMAC(mac);
+            preferences.set(NotSitSharedPreferences.MAC, mac);
             Date now = Calendar.getInstance().getTime();
-            state.setLastConnectTime(now);
-            state.setLastNotifyTime(now);
-            state.setLastTimeDuration(0);
-            state.setSeated(false);
-            stateDAO = new CushionStateDAO(this);
             try {
-                if (stateDAO.getCount() == 0)
-                    stateDAO.insert(state);
-                else
-                    stateDAO.update(state);
+                preferences.set(NotSitSharedPreferences.LastConnectTime, DateFormatter.format(now));
+                preferences.set(NotSitSharedPreferences.LastNotifyTime, DateFormatter.format(now));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
+            preferences.set(NotSitSharedPreferences.LastTimeDuration, "0");
+            preferences.set(NotSitSharedPreferences.IsSeated, "0");
             mBleService.connect(mMac);
             action_operation.setTitle(getString(R.string.connect));
             dialog.cancel();
@@ -199,8 +193,17 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         action_operation = menu.findItem(R.id.action_operation);
-        if (mMac != null)
-            action_operation.setTitle(getString(R.string.connect));
+        if (mMac != null) {
+            int state = Integer.valueOf(preferences.get(NotSitSharedPreferences.BLEState));
+            switch (state) {
+                case BluetoothGatt.STATE_CONNECTED:
+                    action_operation.setTitle(getString(R.string.disconnect));
+                    break;
+                case BluetoothGatt.STATE_DISCONNECTED:
+                    action_operation.setTitle(getString(R.string.connect));
+                    break;
+            }
+        }
         return true;
     }
 
@@ -210,7 +213,6 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_operation) {
             checkBLE();
@@ -231,76 +233,36 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     }
 
     @Override
-    public void notifyConnect() {
-        DebugTools.Log("Connect Cushion");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                action_operation.setTitle(getString(R.string.disconnect));
-            }
-        });
-    }
-
-    @Override
-    public void notifyDisconnect() {
-        DebugTools.Log("Disconnect Cushion");
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                action_operation.setTitle(getString(R.string.connect));
-            }
-        });
-    }
-
-    @Override
     public void notifyScanResult() {
         DebugTools.Log("NotifyDataSetChanged()");
-        DebugTools.Log(adapter == null);
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
     }
 
-    private void initData() {
-        if (DebugTools.isDebugged()) {
-            CushionStateDAO stateDAO = new CushionStateDAO(getApplicationContext());
-            DurationLogDAO logDAO = new DurationLogDAO(getApplicationContext());
-
-            // 如果資料庫是空的，就建立一些範例資料
-            // 這是為了方便測試用的，完成應用程式以後可以拿掉
-            try {
-                if (stateDAO.getCount() == 0)
-                    stateDAO.generate();
-                if (logDAO.getCount() == 0)
-                    ;//logDAO.generate();
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-            List<CushionState> states = null;
-            List<Duration> durations = null;
-            try {
-                states = stateDAO.getAll();
-                durations = logDAO.getAll();
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-            if (states != null) {
-                if (states.size() > 0)
-                    DebugTools.Log(states.get(0).toString());
-            } else DebugTools.Log("Database is NULL");
-            if (durations != null) {
-                if (durations.size() > 0) {
-                    for (Duration duration : durations) {
-                        DebugTools.Log(duration.toString());
+    @Override
+    public void notifyConnectStateChanged(int state) {
+        preferences.set(NotSitSharedPreferences.BLEState, String.valueOf(state));
+        switch (state) {
+            case BluetoothGatt.STATE_CONNECTED:
+                DebugTools.Log("Connect Cushion");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        action_operation.setTitle(getString(R.string.disconnect));
                     }
-                }
-            }
-            stateDAO.close();
-            logDAO.close();
+                });
+                break;
+            case BluetoothGatt.STATE_DISCONNECTED:
+                DebugTools.Log("Disconnect Cushion");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        action_operation.setTitle(getString(R.string.connect));
+                    }
+                });
+                break;
         }
-        isDataCompelete = true;
     }
 
     /**
