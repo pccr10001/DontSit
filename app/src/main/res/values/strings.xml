@@ -15,5 +15,9 @@
     <string name="OneTimeType">單次</string>
     <string name="add">新增</string>
     <string name="delete">刪除</string>
+    <string name="ScanFrequency">掃描頻率</string>
+    <string name="ClockSound">鬧鐘音效</string>
+    <string name="CushionMac">坐墊MAC</string>
+    <string name="DefaultSetting">還原設定</string>
     <bool name="debug">true</bool>
 </resources>

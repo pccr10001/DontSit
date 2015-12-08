@@ -3,6 +3,8 @@ package com.example.dontsit.app.Main;
 import android.annotation.TargetApi;
 import android.app.Service;
 import android.bluetooth.*;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
@@ -142,6 +144,9 @@ public class CushionUpdateService extends Service implements BLEConnectible {
             target_mac = state.getMAC();
             connector.setTarget_MAC(target_mac);
         }
+        String ScanMode = preferences.get(NotSitSharedPreferences.ScanMode);
+        if (!ScanMode.equals(""))
+            connector.setScanMode(Integer.valueOf(ScanMode));
 
         connector.ScanWith(true);
     }

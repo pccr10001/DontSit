@@ -13,11 +13,13 @@ public class NotSitSharedPreferences {
     private SharedPreferences.Editor editor;
     private static final String Name = "NotSitPreference";
     public static final String BLEState = "IsConnected";
+    public static final String ScanMode = "ScanMode";
     public static final String MAC = "CushionMAC";
     public static final String LastTimeDuration = "LastTimeDuration";
     public static final String LastNotifyTime = "LastNotifyTime";
     public static final String LastConnectTime = "LastConnectTime";
     public static final String IsSeated = "IsSeated";
+    public static final String ClockSoundPath = "ClockSoundPath";
 
     public NotSitSharedPreferences(Context context) {
         this.context = context;
@@ -38,7 +40,9 @@ public class NotSitSharedPreferences {
     }
 
     public String get(String key) {
-        return settings.getString(key, key.equals(BLEState) ? "0" : "");
+        if(key.equals(BLEState) || key.equals(ScanMode))
+            return  settings.getString(key, "0");
+        return settings.getString(key, "");
     }
 
     public void clear(String key) {
