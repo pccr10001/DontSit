@@ -4,12 +4,18 @@
 
     <permission android:name="com.example.dontsit.SEND_CushionState"/>
     <permission android:name="com.example.dontsit.SEND_AlarmClock"/>
+    <permission android:name="com.example.dontsit.SEND_BLEState"/>
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="com.example.dontsit.SEND_CushionState"/>
     <uses-permission android:name="com.example.dontsit.SEND_AlarmClock"/>
+    <uses-permission android:name="com.example.dontsit.SEND_BLEState"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -61,7 +67,7 @@
                 android:permission="com.example.dontsit.SEND_CushionState"
                 android:enabled="true" >
             <intent-filter>
-                <action android:name="com.example.dontsit.app.Common.DATABASE_CHANGED"/>
+                <action android:name="com.example.dontsit.app.Database.CUSHION_CHANGED"/>
             </intent-filter>
         </receiver>
         <receiver
@@ -69,7 +75,15 @@
                 android:permission="com.example.dontsit.SEND_AlarmClock"
                 android:enabled="true" >
             <intent-filter>
-                <action android:name="com.example.dontsit.app.AlarmClockActivity.DATABASE_CHANGED"/>
+                <action android:name="com.example.dontsit.app.Database.ALARM_CHANGED"/>
+            </intent-filter>
+        </receiver>
+        <receiver
+                android:name=".Database.BLEStateChangedReceiver"
+                android:permission="com.example.dontsit.SEND_BLEState"
+                android:enabled="true" >
+            <intent-filter>
+                <action android:name="com.example.dontsit.app.Database.BLUETOOTH_CHANGED"/>
             </intent-filter>
         </receiver>
     </application>

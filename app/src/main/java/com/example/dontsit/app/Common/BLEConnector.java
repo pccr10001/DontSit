@@ -160,4 +160,9 @@ public class BLEConnector {
             mBluetoothGatt = Target_Device.connectGatt((Context) mCallback, false, mBluetoothGattCallback);
     }
 
+    public void setCharacteristicNotification(BluetoothGattCharacteristic characteristicNotification, boolean enable) {
+        if (mBluetoothGatt != null)
+            mBluetoothGatt.setCharacteristicNotification(characteristicNotification, enable);
+    }
+
 }

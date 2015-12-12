@@ -12,6 +12,7 @@
 
         <TextView
                 android:text="20 / 100"
+                android:textSize="18sp"
                 android:gravity="center"
                 android:id="@+id/AchievementTextView"
                 android:layout_marginStart="10sp"

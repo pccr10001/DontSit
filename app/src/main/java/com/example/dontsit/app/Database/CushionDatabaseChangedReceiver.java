@@ -6,7 +6,7 @@ import android.content.Intent;
 
 public class CushionDatabaseChangedReceiver extends BroadcastReceiver {
 
-    public static String ACTION_DATABASE_CHANGED = "com.example.dontsit.app.Common.DATABASE_CHANGED";
+    public static String ACTION_DATABASE_CHANGED = "com.example.dontsit.app.Database.CUSHION_CHANGED";
     public static String PERMISSION_DATABASE_CHANGED = "com.example.dontsit.SEND_CushionState";
 
     @Override

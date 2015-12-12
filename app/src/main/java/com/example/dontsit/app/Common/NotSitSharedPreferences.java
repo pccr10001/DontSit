@@ -3,6 +3,7 @@ package com.example.dontsit.app.Common;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import com.example.dontsit.app.Database.BLEStateChangedReceiver;
 import com.example.dontsit.app.Database.CushionDatabaseChangedReceiver;
 import com.example.dontsit.app.R;
 
@@ -21,6 +22,9 @@ public class NotSitSharedPreferences {
     public static final String IsSeated = "IsSeated";
     public static final String ClockSoundPath = "ClockSoundPath";
 
+    public static final String ClockSoundDefaultPath
+            = "android.resource://com.example.dontsit.app/" + R.raw.oldalarmclock;
+
     public NotSitSharedPreferences(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(Name, 0);
@@ -28,20 +32,25 @@ public class NotSitSharedPreferences {
     }
 
     public void set(String key, String value) {
+        if (get(key).equals(value))
+            return;
         editor.putString(key, value);
         editor.apply();
         if (key.equals(IsSeated)) {
-            Intent intent = new Intent(
-                    CushionDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
+            Intent intent = new Intent(CushionDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
             intent.putExtra(context.getString(R.string.NotifyCushionStateDataKey), value.equals("1"));
-            context.sendBroadcast(intent
-                    , CushionDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
+            context.sendBroadcast(intent, CushionDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
+        } else if (key.equals(BLEState)) {
+            Intent intent = new Intent(BLEStateChangedReceiver.ACTION_STATE_CHANGED);
+            context.sendBroadcast(intent, BLEStateChangedReceiver.PERMISSION_STATE_CHANGED);
         }
     }
 
     public String get(String key) {
-        if(key.equals(BLEState) || key.equals(ScanMode))
-            return  settings.getString(key, "0");
+        if (key.equals(BLEState) || key.equals(ScanMode))
+            return settings.getString(key, "0");
+        if (key.equals(ClockSoundPath))
+            return settings.getString(key, ClockSoundDefaultPath);
         return settings.getString(key, "");
     }
 

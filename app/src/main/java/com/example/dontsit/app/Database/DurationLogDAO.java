@@ -9,10 +9,7 @@ import com.example.dontsit.app.Common.DebugTools;
 import com.example.dontsit.app.MainActivity;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class DurationLogDAO {
     // 表格名稱
@@ -92,6 +89,13 @@ public class DurationLogDAO {
         String where = KEY_ID + "= '" + date.toString() + "'";
         // 刪除指定編號資料並回傳刪除是否成功
         return db.delete(TABLE_NAME, where, null) > 0;
+    }
+
+    public void removeAll()
+    {
+        // db.delete(String tableName, String whereClause, String[] whereArgs);
+        // If whereClause is null, it will delete all rows.
+        db.execSQL("delete from "+ TABLE_NAME);
     }
 
     // 讀取所有記事資料
@@ -178,18 +182,18 @@ public class DurationLogDAO {
     }
 
     public void generate() throws ParseException {
-        int count = 2;
+        int count = 24 * 7;
         List<Duration> durations = new ArrayList<Duration>();
         for (int i = 0; i < count; i++) {
             Duration duration = new Duration();
             Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.MINUTE, i * 10);
+            calendar.add(Calendar.HOUR_OF_DAY, -i);
             duration.setStartTime(calendar.getTime());
-            duration.setTime(0);
+            duration.setTime(new Random().nextInt(3600) * 1000);
             durations.add(duration);
+            DebugTools.Log(duration);
         }
-        for (Duration duration : durations) {
+        for (Duration duration : durations)
             insert(duration);
-        }
     }
 }

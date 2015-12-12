@@ -8,8 +8,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.view.WindowManager;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClock;
@@ -35,6 +37,7 @@ public class AlarmService extends Service {
     private List<Timer> timers = new ArrayList<Timer>();
     private Boolean IsSeated = false;
     private MediaPlayer player;
+    private String MediaPath;
     private NotSitSharedPreferences preferences;
 
     @Override
@@ -42,21 +45,34 @@ public class AlarmService extends Service {
         super.onCreate();
         alarmClockDAO = new AlarmClockDAO(this);
         manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        clocks = alarmClockDAO.getAll();
-        for (final AlarmClock clock : clocks)
-            timers.add(new Timer(clock));
+
         preferences = new NotSitSharedPreferences(this);
         String IsSeated = preferences.get(NotSitSharedPreferences.IsSeated);
         if (!IsSeated.equals(""))
             this.IsSeated = IsSeated.equals("1");
+
+        if (alarmClockDAO.getCount() > 0) {
+            clocks = alarmClockDAO.getAll();
+            for (AlarmClock clock : clocks) {
+                DebugTools.Log("*"+clock);
+                Timer timer = new Timer(clock);
+                timers.add(timer);
+                timer.create();
+                if (this.IsSeated && clock.isEnabled())
+                    timer.resume();
+            }
+        }
         alarmClockDAO.close();
         registerReceiver(mCushionDatabaseReceiver, mCushionFilter);
         registerReceiver(mAlarmDatabaseReceiver, mAlarmFilter);
-        player = MediaPlayer.create(this, R.raw.oldalarmclock);
+        MediaPath = preferences.get(NotSitSharedPreferences.ClockSoundPath);
+        DebugTools.Log(MediaPath);
+        player = MediaPlayer.create(this, Uri.parse(MediaPath));
+        player.setLooping(true);
     }
 
 
-    private class Timer extends CountDownTimerWithPause {
+    public class Timer extends CountDownTimerWithPause {
 
         private AlarmClock clock;
 
@@ -76,17 +92,24 @@ public class AlarmService extends Service {
             DebugTools.Log("Clock " + clock.getId() + " Finish!");
             showTimeUpMessage();
             player.start();
-            if (clock.getType() == AlarmClock.EveryTimeAlarm && timers != null) {
+            if (clock.isRepeated() && timers != null) {
                 DebugTools.Log("Clock " + clock.getId() + " Restart!");
                 timers.remove(this);
                 Timer timer = new Timer(clock);
                 timers.add(timer);
                 timer.create();
+                timer.pause();
                 if (IsSeated)
                     timer.resume();
             } else {
-                alarmClockDAO.delete(clock.getId());
+                clock.setEnabled(false);
+                alarmClockDAO.update(clock);
             }
+        }
+
+        @Override
+        public String toString() {
+            return "Timer " + clock;
         }
 
         @Override
@@ -117,9 +140,10 @@ public class AlarmService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        DebugTools.Log("AlarmService Destroy");
         unregisterReceiver(mCushionDatabaseReceiver);
         unregisterReceiver(mAlarmDatabaseReceiver);
+        super.onDestroy();
     }
 
     private CushionDatabaseChangedReceiver mCushionDatabaseReceiver = new CushionDatabaseChangedReceiver() {
@@ -128,12 +152,23 @@ public class AlarmService extends Service {
             if (extras == null)
                 return;
             IsSeated = extras.getBoolean(getString(R.string.NotifyCushionStateDataKey));
-//            DebugTools.Log(IsSeated);
-            for (Timer timer : timers) {
-                if (IsSeated)
+            DebugTools.Log("AlarmService receive " + IsSeated);
+            for (int i = 0; i < timers.size(); i++) {
+                Timer timer = timers.get(i);
+                if (!timer.clock.isEnabled())
+                    continue;
+                if (IsSeated) {
                     timer.resume();
-                else
+                } else {
+                    if (timer.clock.isResettable()) {
+                        timers.remove(timer);
+                        timer.cancel();
+                        Timer newTimer = new Timer(timer.clock);
+                        timers.add(newTimer);
+                        newTimer.create();
+                    }
                     timer.pause();
+                }
             }
         }
     };
@@ -142,29 +177,58 @@ public class AlarmService extends Service {
         public void onReceive(Context context, Intent intent) {
             alarmClockDAO = new AlarmClockDAO(AlarmService.this);
             Bundle extras = intent.getExtras();
-            int id = -1;
 
-            if (extras != null)
+            int id = -1;
+            int operation = -1;
+            if (extras != null) {
                 id = extras.getInt("ID");
-//            DebugTools.Log(id);
+                operation = extras.getInt("Operation");
+            }
 
             if (id == -1)
                 return;
 
-            AlarmClock newClocks = alarmClockDAO.get((long) id);
-            if (newClocks != null) {
-                DebugTools.Log(newClocks);
-                Timer timer = new Timer(newClocks);
-                timers.add(timer);
-                timer.create();
-                if (IsSeated)
-                    timer.resume();
-            } else {
-                for (Timer timer : timers)
-                    if (timer.clock.getId() == id) {
-                        timers.remove(timer);
-                        timer.cancel();
+
+            AlarmClock newClock = alarmClockDAO.get((long) id);
+            Timer temp = null;
+
+            switch (operation) {
+                //insert
+                case 0:
+                    if (newClock.isEnabled()) {
+                        Timer newTimer = new Timer(newClock);
+                        timers.add(newTimer);
+                        newTimer.create();
+                        newTimer.pause();
+                        if (IsSeated)
+                            newTimer.resume();
                     }
+                    break;
+                //update
+                case 1:
+                    for (Timer timer : timers)
+                        if (timer.clock.getId() == id)
+                            temp = timer;
+                    if (newClock.isEnabled()) {
+                        timers.remove(temp);
+                        Timer newTimer = new Timer(newClock);
+                        timers.add(newTimer);
+                        newTimer.create();
+                        newTimer.pause();
+                        if (IsSeated)
+                            newTimer.resume();
+                    }
+                    break;
+                //delete
+                case 2:
+                    for (Timer timer : timers)
+                        if (timer.clock.getId() == id)
+                            temp = timer;
+                    if (temp != null) {
+                        temp.cancel();
+                        timers.remove(temp);
+                    }
+                    break;
             }
         }
     };

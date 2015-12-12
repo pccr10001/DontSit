@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClock;
+import com.example.dontsit.app.Common.DebugTools;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +21,18 @@ public class AlarmClockDAO {
     public static final String KEY_ID = "_id";
 
     // 其它表格欄位名稱
-    public static final String TYPE_COLUMN = "type";
+    public static final String REPEAT_COLUMN = "repeat";
+    public static final String RESET_COLUMN = "reset";
+    public static final String ENABLE_COLUMN = "enable";
     public static final String TIME_COLUMN = "time";
 
     // 使用上面宣告的變數建立表格的SQL指令
     public static final String CREATE_TABLE =
             "CREATE TABLE " + TABLE_NAME + " (" +
                     KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    TYPE_COLUMN + " INTEGER NOT NULL, " +
+                    REPEAT_COLUMN + " INTEGER NOT NULL, " +
+                    RESET_COLUMN + " INTEGER NOT NULL, " +
+                    ENABLE_COLUMN + " INTEGER NOT NULL, " +
                     TIME_COLUMN + " INTEGER NOT NULL)";
 
     // 資料庫物件
@@ -51,7 +56,9 @@ public class AlarmClockDAO {
 
         // 加入ContentValues物件包裝的新增資料
         // 第一個參數是欄位名稱， 第二個參數是欄位的資料
-        cv.put(TYPE_COLUMN, alarmClock.getType());
+        cv.put(REPEAT_COLUMN, alarmClock.isRepeated() ? 1 : 0);
+        cv.put(RESET_COLUMN, alarmClock.isResettable() ? 1 : 0);
+        cv.put(ENABLE_COLUMN, alarmClock.isEnabled() ? 1 : 0);
         cv.put(TIME_COLUMN, alarmClock.getTime());
 
         // 新增一筆資料並取得編號
@@ -65,7 +72,9 @@ public class AlarmClockDAO {
 
         Intent intent = new Intent(AlarmDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
         intent.putExtra("ID", alarmClock.getId());
-        context.sendBroadcast(intent);
+        intent.putExtra("Operation",AlarmDatabaseChangedReceiver.ACTION_INSERT);
+        context.sendBroadcast(intent, AlarmDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
+//        DebugTools.Log("AlarmDatabase insert " + alarmClock);
         // 回傳結果
         return alarmClock;
     }
@@ -77,7 +86,9 @@ public class AlarmClockDAO {
 
         // 加入ContentValues物件包裝的修改資料
         // 第一個參數是欄位名稱， 第二個參數是欄位的資料
-        cv.put(TYPE_COLUMN, alarmClock.getType());
+        cv.put(REPEAT_COLUMN, alarmClock.isRepeated() ? 1 : 0);
+        cv.put(RESET_COLUMN, alarmClock.isResettable() ? 1 : 0);
+        cv.put(ENABLE_COLUMN, alarmClock.isEnabled() ? 1 : 0);
         cv.put(TIME_COLUMN, alarmClock.getTime());
 
         // 設定修改資料的條件為編號
@@ -86,7 +97,9 @@ public class AlarmClockDAO {
 
         Intent intent = new Intent(AlarmDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
         intent.putExtra("ID", alarmClock.getId());
-        context.sendBroadcast(intent);
+        intent.putExtra("Operation",AlarmDatabaseChangedReceiver.ACTION_UPDATE);
+        context.sendBroadcast(intent, AlarmDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
+//        DebugTools.Log("AlarmDatabase update " + alarmClock);
         // 執行修改資料並回傳修改的資料數量是否成功
         return db.update(TABLE_NAME, cv, where, null) > 0;
     }
@@ -99,8 +112,10 @@ public class AlarmClockDAO {
         Intent intent = new Intent(AlarmDatabaseChangedReceiver.ACTION_DATABASE_CHANGED);
         Long id2 = id;
         intent.putExtra("ID", id2.intValue());
-        context.sendBroadcast(intent);
+        intent.putExtra("Operation",AlarmDatabaseChangedReceiver.ACTION_DELETE);
+        context.sendBroadcast(intent, AlarmDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
 
+        DebugTools.Log("AlarmDatabase delete " + id);
         // 刪除指定編號資料並回傳刪除是否成功
         return db.delete(TABLE_NAME, where, null) > 0;
     }
@@ -147,8 +162,10 @@ public class AlarmClockDAO {
         AlarmClock result = new AlarmClock();
 
         result.setId(cursor.getInt(0));
-        result.setType(cursor.getInt(1));
-        result.setTime(cursor.getInt(2));
+        result.setIsRepeated(cursor.getInt(1) == 1);
+        result.setIsResettable(cursor.getInt(2) == 1);
+        result.setEnabled(cursor.getInt(3) == 1);
+        result.setTime(cursor.getInt(4));
 
         // 回傳結果
         return result;
@@ -165,5 +182,18 @@ public class AlarmClockDAO {
 
         cursor.close();
         return result;
+    }
+
+    public void generate() {
+        AlarmClock clock = new AlarmClock();
+        clock.setTime(2 * 3600 * 1000);
+        clock.setIsRepeated(true);
+        clock.setIsResettable(true);
+        clock.setEnabled(false);
+        insert(clock);
+        clock.setTime(8 * 3600 * 1000);
+        clock.setIsRepeated(true);
+        clock.setIsResettable(false);
+        insert(clock);
     }
 }

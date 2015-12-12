@@ -4,6 +4,7 @@
     <string name="action_settings">Settings</string>
     <string name="tag">NotSit</string>
     <string name="yes">確定</string>
+    <string name="cancel">取消</string>
     <string name="scan">搜尋</string>
     <string name="connect">連線</string>
     <string name="disconnect">斷線</string>
@@ -11,7 +12,6 @@
     <string name="notSupportBLE">不支援低耗藍牙</string>
     <string name="enableBLE">藍牙服務未開啟，需開啟才能繼續執行。</string>
     <string name="NotifyCushionStateDataKey">CushionState</string>
-    <string name="EveryTimeType">重複</string>
     <string name="OneTimeType">單次</string>
     <string name="add">新增</string>
     <string name="delete">刪除</string>
@@ -19,5 +19,17 @@
     <string name="ClockSound">鬧鐘音效</string>
     <string name="CushionMac">坐墊MAC</string>
     <string name="DefaultSetting">還原設定</string>
+    <string name="ResetData">清除資料</string>
+    <string name="ScanModeLowFrequency">低頻率</string>
+    <string name="ScanModeBalanced">平　衡</string>
+    <string name="ScanModeLowLatency">低閒置</string>
+    <string name="WorkTime">作用時間</string>
+    <string name="Hour">時</string>
+    <string name="Minute">分</string>
+    <string name="Second">秒</string>
+    <string name="AlarmReset">離開歸零</string>
+    <string name="Repeat">重複</string>
+    <string name="SureToResetSetting">確定要還原設定嗎？</string>
+    <string name="SureToClearLog">確定要清除資料嗎？</string>
     <bool name="debug">true</bool>
 </resources>

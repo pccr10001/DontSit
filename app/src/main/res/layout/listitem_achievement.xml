@@ -5,8 +5,7 @@
               android:layout_height="match_parent">
 
     <LinearLayout
-            android:layout_weight="1"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
         <ImageView
@@ -29,36 +28,6 @@
                     android:id="@+id/AchievementDescription"
                     android:layout_width="wrap_content"
                     android:layout_height="35sp"/>
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-
-    <LinearLayout
-            android:layout_weight="1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-        <ImageView
-                android:padding="5sp"
-                android:id="@+id/AchievementImageView2"
-                android:layout_width="40sp"
-                android:layout_height="40sp"/>
-
-        <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="fill_parent"
-                android:layout_height="40sp">
-
-            <TextView
-                    android:id="@+id/AchievementTitle2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="15sp"/>
-
-            <TextView
-                    android:id="@+id/AchievementDescription2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25sp"/>
 
         </LinearLayout>
 

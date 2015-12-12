@@ -11,7 +11,7 @@ public class DateFormatter {
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
     private static SimpleDateFormat short_formatter =
-            new SimpleDateFormat("MM/dd HH", Locale.getDefault());
+            new SimpleDateFormat("MM/dd-HH", Locale.getDefault());
 
     public static Date parse(String date) throws ParseException {
         return formatter.parse(date);

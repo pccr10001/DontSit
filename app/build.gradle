@@ -42,4 +42,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.github.PhilJay:MPAndroidChart:v2.1.6'
     compile 'com.github.rey5137:material:1.2.1'
+    compile 'com.github.navasmdc:MaterialDesign:1.5@aar'
+    compile 'com.nineoldandroids:library:2.4.+'
 }

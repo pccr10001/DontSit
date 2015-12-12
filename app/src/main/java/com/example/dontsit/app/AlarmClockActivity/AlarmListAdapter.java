@@ -4,10 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.*;
 import com.example.dontsit.app.Database.AlarmClockDAO;
 import com.example.dontsit.app.R;
 
@@ -19,19 +16,29 @@ public class AlarmListAdapter extends BaseAdapter {
 
     private List<AlarmClock> clocks;
     private LayoutInflater inflater;
+    private Context context;
     private AlarmClockDAO alarmClockDAO;
 
     public AlarmListAdapter(Context context, List<AlarmClock> clocks) {
         inflater = LayoutInflater.from(context);
-        alarmClockDAO = new AlarmClockDAO(context);
+        this.context = context;
         this.clocks = clocks;
     }
 
     private static class ViewHolder {
-        ImageView RepeatImageView;
-        ImageView OneTimeImageView;
+        private int id;
+        TextView RepeatTextView;
+        TextView ResetTextView;
         TextView AlarmClockTextView;
-        Button DeleteButton;
+        CheckBox EnableCheckbox;
+        ImageView DeleteButton;
+    }
+
+    public Object getItemById(int id) {
+        for (AlarmClock clock : clocks)
+            if (clock.getId() == id)
+                return clock;
+        return null;
     }
 
     @Override
@@ -52,22 +59,42 @@ public class AlarmListAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         final ViewHolder holder;
-        final AlarmClock clock = clocks.get(position);
+        AlarmClock clock = clocks.get(position);
         if (convertView == null) {
             holder = new ViewHolder();
             convertView = inflater.inflate(R.layout.listitem_clockrule, parent, false);
-            holder.RepeatImageView = (ImageView) convertView.findViewById(R.id.RepeatImageView);
-            holder.OneTimeImageView = (ImageView) convertView.findViewById(R.id.OneTimeImageView);
+            holder.RepeatTextView = (TextView) convertView.findViewById(R.id.RepeatTextView);
+            holder.ResetTextView = (TextView) convertView.findViewById(R.id.ResetTextView);
             holder.AlarmClockTextView = (TextView) convertView.findViewById(R.id.AlarmClockTextView);
-            holder.DeleteButton = (Button) convertView.findViewById(R.id.DeleteButton);
+            holder.EnableCheckbox = (CheckBox) convertView.findViewById(R.id.ClockEnableCheckbox);
+            holder.DeleteButton = (ImageView) convertView.findViewById(R.id.DeleteButton);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
-        if (clock.getType() == AlarmClock.OneTimeAlarm) {
-            holder.RepeatImageView.setVisibility(View.GONE);
-            holder.OneTimeImageView.setVisibility(View.VISIBLE);
-        }
+        holder.RepeatTextView.setVisibility(clock.isRepeated() ? View.VISIBLE : View.GONE);
+        holder.ResetTextView.setVisibility(clock.isResettable() ? View.VISIBLE : View.GONE);
+        holder.EnableCheckbox.setChecked(clock.isEnabled());
+        holder.id = clock.getId();
+        holder.EnableCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                alarmClockDAO = new AlarmClockDAO(context);
+                AlarmClock temp = alarmClockDAO.get(holder.id);
+                temp.setEnabled(isChecked);
+                alarmClockDAO.update(temp);
+            }
+        });
+        holder.DeleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alarmClockDAO = new AlarmClockDAO(context);
+                AlarmClock temp = alarmClockDAO.get(holder.id);
+                clocks.remove(temp);
+                alarmClockDAO.delete(temp.getId());
+                notifyDataSetChanged();
+            }
+        });
         int time = clock.getTime();
         String result = String.format("%02d:%02d:%02d",
                 TimeUnit.MILLISECONDS.toHours(time),
@@ -77,13 +104,6 @@ public class AlarmListAdapter extends BaseAdapter {
                         TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(time)));
 
         holder.AlarmClockTextView.setText(result);
-        holder.DeleteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                alarmClockDAO.delete(clock.getId());
-                remove(clock);
-            }
-        });
         return convertView;
     }
 

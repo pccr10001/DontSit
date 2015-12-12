@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
@@ -11,6 +10,7 @@
             android:layout_height="60sp">
 
         <TextView
+                android:layout_marginStart="10sp"
                 android:text="@string/ScanFrequency"
                 android:layout_alignParentStart="true"
                 android:gravity="center"
@@ -18,21 +18,23 @@
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"/>
 
-        <com.rey.material.widget.Spinner
+        <Spinner
+                android:layout_marginEnd="10sp"
                 android:layout_alignParentEnd="true"
                 android:id="@+id/spinner_label"
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"
-                android:minWidth="128dp"
                 android:padding="8dp"
-                android:gravity="center"
-                app:spn_label="Spinner with arrow"
-                style="@style/Material.Widget.Spinner"
-                app:rd_style="@style/Material.Drawable.Ripple.Wave">
-
-        </com.rey.material.widget.Spinner>
+                android:dropDownWidth="88sp"
+                android:gravity="end"
+                style="@style/Material.Widget.Spinner"/>
 
     </RelativeLayout>
+
+    <View
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"
+            android:background="@color/Gray"/>
 
     <RelativeLayout
             android:orientation="horizontal"
@@ -40,6 +42,7 @@
             android:layout_height="60sp">
 
         <TextView
+                android:layout_marginStart="10sp"
                 android:text="@string/ClockSound"
                 android:layout_alignParentStart="true"
                 android:gravity="center"
@@ -47,14 +50,26 @@
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"/>
 
-        <EditText
+        <TextView
+                android:background="@drawable/rounded_view"
+                android:layout_margin="10sp"
                 android:id="@+id/ClockSoundPathEditText"
-                android:gravity="center"
+                android:gravity="bottom"
+                android:textSize="20sp"
+                android:minWidth="150sp"
+                android:maxWidth="150sp"
+                android:paddingStart="8sp"
+                android:paddingEnd="8sp"
                 android:layout_alignParentEnd="true"
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"/>
 
     </RelativeLayout>
+
+    <View
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"
+            android:background="@color/Gray"/>
 
     <RelativeLayout
             android:orientation="horizontal"
@@ -62,6 +77,7 @@
             android:layout_height="60sp">
 
         <TextView
+                android:layout_marginStart="10sp"
                 android:text="@string/CushionMac"
                 android:layout_alignParentStart="true"
                 android:gravity="center"
@@ -70,13 +86,23 @@
                 android:layout_height="60sp"/>
 
         <EditText
+                android:background="@drawable/rounded_view"
                 android:id="@+id/CushionMacEditText"
-                android:gravity="center"
+                android:gravity="center_vertical|end"
+                android:paddingStart="8sp"
+                android:paddingEnd="8sp"
+                android:minWidth="150sp"
+                android:layout_margin="10sp"
                 android:layout_alignParentEnd="true"
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"/>
 
     </RelativeLayout>
+
+    <View
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"
+            android:background="@color/Gray"/>
 
     <RelativeLayout
             android:orientation="horizontal"
@@ -84,6 +110,7 @@
             android:layout_height="60sp">
 
         <TextView
+                android:layout_marginStart="10sp"
                 android:text="@string/DefaultSetting"
                 android:layout_alignParentStart="true"
                 android:gravity="center"
@@ -93,6 +120,36 @@
 
         <com.rey.material.widget.Switch
                 android:id="@+id/DefaultSettingSwitch"
+                android:layout_alignParentEnd="true"
+                android:layout_width="wrap_content"
+                android:layout_height="60sp"
+                android:gravity="center"
+                android:checked="false"
+                android:padding="16dp"/>
+
+    </RelativeLayout>
+
+    <View
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"
+            android:background="@color/Gray"/>
+
+    <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="60sp">
+
+        <TextView
+                android:layout_marginStart="10sp"
+                android:text="@string/ResetData"
+                android:layout_alignParentStart="true"
+                android:gravity="center"
+                android:textSize="25sp"
+                android:layout_width="wrap_content"
+                android:layout_height="60sp"/>
+
+        <com.rey.material.widget.Switch
+                android:id="@+id/ResetDataSwitch"
                 android:layout_alignParentEnd="true"
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"

@@ -2,16 +2,14 @@ package com.example.dontsit.app.AlarmClockActivity;
 
 public class AlarmClock {
 
-    public static final int EveryTimeAlarm = 0;
-    public static final int OneTimeAlarm = 1;
-    private int id, type, time;
+    private boolean IsRepeated = false,
+            IsResettable = true,
+            Enabled = true;
+
+    private int id, time;
 
     public AlarmClock() {
-    }
 
-    public AlarmClock(int type, int time) {
-        this.type = type;
-        this.time = time;
     }
 
     public int getId() {
@@ -30,21 +28,40 @@ public class AlarmClock {
         this.time = time;
     }
 
-    public int getType() {
-        return type;
+    public boolean isRepeated() {
+        return IsRepeated;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void setIsRepeated(boolean isRepeated) {
+        IsRepeated = isRepeated;
+    }
+
+    public boolean isResettable() {
+        return IsResettable;
+    }
+
+    public void setIsResettable(boolean isResettable) {
+        IsResettable = isResettable;
+    }
+
+    public boolean isEnabled() {
+        return Enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        Enabled = enabled;
     }
 
     @Override
     public String toString() {
-        return id + " - " + type + " - " + time;
+        return id + " - " + time + " - Repeat " + Boolean.valueOf(IsRepeated).toString() +
+                " - Reset " + Boolean.valueOf(IsResettable).toString() +
+                " - Enabled " + Boolean.valueOf(Enabled).toString();
     }
 
     @Override
     public boolean equals(Object o) {
         return o instanceof AlarmClock && this.getId() == ((AlarmClock) o).getId();
     }
+
 }

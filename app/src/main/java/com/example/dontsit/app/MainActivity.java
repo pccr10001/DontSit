@@ -2,11 +2,10 @@ package com.example.dontsit.app;
 
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.bluetooth.le.ScanSettings;
+import android.content.*;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -21,43 +20,52 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import com.example.dontsit.app.AchievementActivity.AchievementActivity;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
-import com.example.dontsit.app.Common.DateFormatter;
-import com.example.dontsit.app.Common.DebugTools;
-import com.example.dontsit.app.Common.NotSitSharedPreferences;
+import com.example.dontsit.app.Common.*;
 import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
+import com.example.dontsit.app.Database.BLEStateChangedReceiver;
 import com.example.dontsit.app.Main.AlarmService;
 import com.example.dontsit.app.Main.CushionUpdateService;
-import com.example.dontsit.app.Main.DataAlwaysChanged;
 import com.example.dontsit.app.Main.ScanListViewAdapter;
 import com.example.dontsit.app.SettingActivity.SettingActivity;
 import com.example.dontsit.app.SitTimeActivity.SitTimeActivity;
 import com.rey.material.app.SimpleDialog;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements DataAlwaysChanged {
+public class MainActivity extends AppCompatActivity implements BLEConnectible {
 
     private CushionUpdateService mBleService;
     private AlarmService mAlarmService;
     private boolean BLEServiceBound = false;
     private boolean AlarmServiceBound = false;
     private final static int REQUEST_ENABLE_BT = 1;
-    private Animation animation_clicked;
-    private MenuItem action_operation;
+    private Animation ClickedAnimation;
+    private MenuItem MenuOperationItem;
     private String mMac;
-    private NotSitSharedPreferences preferences;
+    private NotSitSharedPreferences mPreferences;
+
+    private BLEConnector FirstCheckConnector;
+    private int ScanMode = ScanSettings.SCAN_MODE_LOW_POWER;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        preferences = new NotSitSharedPreferences(this);
+        initPreferences();
         initDebugMode();
-        initCushionState();
-        //initData();
-        animation_clicked = AnimationUtils.loadAnimation(this, R.anim.image_click);
+        registerReceiver(mReceiver, mFilter);
+    }
+
+    private void initPreferences() {
+        mPreferences = new NotSitSharedPreferences(this);
+        String mode = mPreferences.get(NotSitSharedPreferences.ScanMode);
+        ScanMode = mode.equals("") ? 0 : Integer.valueOf(mode);
+        mMac = mPreferences.get(NotSitSharedPreferences.MAC);
+        ClickedAnimation = AnimationUtils.loadAnimation(this, R.anim.image_click);
     }
 
     private void checkBLE() {
@@ -66,18 +74,25 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
             finish();
         }
 
+        //Start Setting
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null || !adapter.isEnabled()) {
-            showRequestMessage(getString(R.string.system_error), getString(R.string.enableBLE), new DialogAction() {
+            showRequestMessage(getString(R.string.system_error),
+                    getString(R.string.enableBLE), new DialogAction() {
                 @Override
                 public void Action() {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
             });
-        } else {
+        } else if (!mMac.equals("")) {
             initBLEService();
             initAlarmService();
+        } else {
+            FirstCheckConnector = new BLEConnector(adapter, this);
+            FirstCheckConnector.setScanMode(ScanMode);
+            FirstCheckConnector.ScanWith(true);
+            initDialog();
         }
     }
 
@@ -86,44 +101,57 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     }
 
     private void showRequestMessage(String title, String message, final DialogAction listener) {
-        final SimpleDialog builder = new SimpleDialog(this, R.style.SimpleDialog);
-        builder.messageTextAppearance(R.styleable.SimpleDialog_di_messageTextAppearance)
-                .message(message)
-                .title(title)
-                .negativeAction(getString(R.string.yes))
-                .negativeActionClickListener(new View.OnClickListener() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(message)
+                .setTitle(title)
+                .setNegativeButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     @Override
-                    public void onClick(View v) {
+                    public void onClick(DialogInterface dialog, int which) {
                         listener.Action();
-                        builder.cancel();
                     }
                 })
                 .show();
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (mBleService != null)
-            mBleService.stopScan();
+    public void ScanResultThenDoWith(BluetoothDevice device) {
+        if (!ScanResult.contains(device)) {
+            ScanResult.add(device);
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
-    protected void onDestroy() {
-        if (BLEServiceBound) {
-            unbindService(BluetoothServiceConnection);
-            BLEServiceBound = false;
-        }
-        if (AlarmServiceBound) {
-            unbindService(AlarmServiceConnection);
-            AlarmServiceBound = false;
-        }
-        Intent intent = new Intent(this, CushionUpdateService.class);
-        stopService(intent);
-        intent = new Intent(this, AlarmService.class);
-        stopService(intent);
-        super.onDestroy();
+    public void ReceiveNotificationThenDoWith(byte[] bytes) {
+        //do nothing
     }
+
+    @Override
+    public void DiscoveredServicesThenDo(BluetoothGatt gatt) {
+        //do nothing
+    }
+
+    @Override
+    public void ConnectionStateChangedThenDo(int state) {
+        //do nothing
+    }
+
+    private IntentFilter mFilter = new IntentFilter(BLEStateChangedReceiver.ACTION_STATE_CHANGED);
+
+    private BLEStateChangedReceiver mReceiver = new BLEStateChangedReceiver() {
+        public void onReceive(Context context, Intent intent) {
+//            DebugTools.Log(mPreferences.get(NotSitSharedPreferences.BLEState));
+            int state = Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState));
+            switch (state) {
+                case BluetoothGatt.STATE_CONNECTED:
+                    MenuOperationItem.setTitle(getString(R.string.disconnect));
+                    break;
+                case BluetoothGatt.STATE_DISCONNECTED:
+                    MenuOperationItem.setTitle(getString(R.string.connect));
+                    break;
+            }
+        }
+    };
 
     private void initBLEService() {
         if (mBleService == null) {
@@ -147,20 +175,15 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         DebugTools.initTools(getResources());
     }
 
-    private void initCushionState() {
-        String temp = preferences.get(NotSitSharedPreferences.MAC);
-        mMac = temp.equals("") ? null : temp;
-    }
-
-    BaseAdapter adapter;
-    ListView devices;
-    AlertDialog dialog;
+    private BaseAdapter adapter;
+    private AlertDialog dialog;
+    private List<BluetoothDevice> ScanResult = new ArrayList<BluetoothDevice>();
 
     private void initDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.ScanDialog));
         View view = getLayoutInflater().inflate(R.layout.dialog_scan, null);
-        devices = (ListView) view.findViewById(R.id.ScanListView);
-        adapter = new ScanListViewAdapter(this, mBleService.getResults());
+        ListView devices = (ListView) view.findViewById(R.id.ScanListView);
+        adapter = new ScanListViewAdapter(this, ScanResult);
         devices.setAdapter(adapter);
         builder.setView(view);
         dialog = builder.create();
@@ -169,38 +192,38 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     }
 
     public void chooseMac(String mac) {
+        Date now = Calendar.getInstance().getTime();
         mMac = mac;
-        if (mBleService != null) {
-//            DebugTools.Log("Choose Device");
-            preferences.set(NotSitSharedPreferences.MAC, mac);
-            Date now = Calendar.getInstance().getTime();
-            try {
-                preferences.set(NotSitSharedPreferences.LastConnectTime, DateFormatter.format(now));
-                preferences.set(NotSitSharedPreferences.LastNotifyTime, DateFormatter.format(now));
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            preferences.set(NotSitSharedPreferences.LastTimeDuration, "0");
-            preferences.set(NotSitSharedPreferences.IsSeated, "0");
-            mBleService.connect(mMac);
-            action_operation.setTitle(getString(R.string.connect));
-            dialog.cancel();
+        try {
+            mPreferences.set(NotSitSharedPreferences.MAC, mac);
+            mPreferences.set(NotSitSharedPreferences.LastConnectTime, DateFormatter.format(now));
+            mPreferences.set(NotSitSharedPreferences.LastNotifyTime, DateFormatter.format(now));
+            mPreferences.set(NotSitSharedPreferences.LastTimeDuration, "0");
+            mPreferences.set(NotSitSharedPreferences.IsSeated, "0");
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
+        dialog.cancel();
+        dialog.dismiss();
+        FirstCheckConnector.ScanWith(false);
+        FirstCheckConnector = null;
+
+        checkBLE();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        action_operation = menu.findItem(R.id.action_operation);
-        if (mMac != null) {
-            int state = Integer.valueOf(preferences.get(NotSitSharedPreferences.BLEState));
+        MenuOperationItem = menu.findItem(R.id.action_operation);
+        if (!mMac.equals("")) {
+            int state = Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState));
             switch (state) {
                 case BluetoothGatt.STATE_CONNECTED:
-                    action_operation.setTitle(getString(R.string.disconnect));
+                    MenuOperationItem.setTitle(getString(R.string.disconnect));
                     break;
                 case BluetoothGatt.STATE_DISCONNECTED:
-                    action_operation.setTitle(getString(R.string.connect));
+                    MenuOperationItem.setTitle(getString(R.string.connect));
                     break;
             }
         }
@@ -215,16 +238,20 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_operation) {
-            checkBLE();
-            if (item.getTitle().equals(getString(R.string.scan))) {
-                if (mMac == null && mBleService != null)
-                    initDialog();
-            } else if (item.getTitle().equals(getString(R.string.connect))
-                    && mBleService != null) {
-                mBleService.connect(mMac);
-            } else if (item.getTitle().equals(getString(R.string.disconnect))
-                    && mBleService != null) {
-                mBleService.disconnect();
+            if (item.getTitle().equals(getString(R.string.disconnect))) {
+                DebugTools.Log("Stop Service");
+                if (BluetoothServiceConnection != null)
+                    unbindService(BluetoothServiceConnection);
+                Intent intent = new Intent(MainActivity.this, CushionUpdateService.class);
+                stopService(intent);
+                mBleService = null;
+                if (AlarmServiceConnection != null)
+                    unbindService(AlarmServiceConnection);
+                intent = new Intent(MainActivity.this, AlarmService.class);
+                stopService(intent);
+                mAlarmService = null;
+            } else {
+                checkBLE();
             }
             return true;
         }
@@ -233,41 +260,11 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     }
 
     @Override
-    public void notifyScanResult() {
-        DebugTools.Log("NotifyDataSetChanged()");
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        }
+    protected void onDestroy() {
+        unregisterReceiver(mReceiver);
+        super.onDestroy();
     }
 
-    @Override
-    public void notifyConnectStateChanged(int state) {
-        preferences.set(NotSitSharedPreferences.BLEState, String.valueOf(state));
-        switch (state) {
-            case BluetoothGatt.STATE_CONNECTED:
-                DebugTools.Log("Connect Cushion");
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        action_operation.setTitle(getString(R.string.disconnect));
-                    }
-                });
-                break;
-            case BluetoothGatt.STATE_DISCONNECTED:
-                DebugTools.Log("Disconnect Cushion");
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        action_operation.setTitle(getString(R.string.connect));
-                    }
-                });
-                break;
-        }
-    }
-
-    /**
-     * Callbacks for service binding, passed to bindService()
-     */
     private ServiceConnection BluetoothServiceConnection = new ServiceConnection() {
 
         @Override
@@ -275,15 +272,11 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
             // cast the IBinder and get MyService instance
             CushionUpdateService.LocalBinder binder = (CushionUpdateService.LocalBinder) iBinder;
             mBleService = binder.getService();
-            mBleService.setCallbacks(MainActivity.this); // register
             BLEServiceBound = true;
-            if (mMac == null)
-                initDialog();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
-            mBleService.setCallbacks(null); // unregister
             BLEServiceBound = false;
         }
     };
@@ -303,31 +296,31 @@ public class MainActivity extends AppCompatActivity implements DataAlwaysChanged
     };
 
     public void goCushionStatePage(View view) {
-        view.startAnimation(animation_clicked);
+        view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, CushionStateActivity.class);
         startActivity(intent);
     }
 
     public void goSitTimePage(View view) {
-        view.startAnimation(animation_clicked);
+        view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, SitTimeActivity.class);
         startActivity(intent);
     }
 
     public void goAlarmClockPage(View view) {
-        view.startAnimation(animation_clicked);
+        view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, AlarmClockActivity.class);
         startActivity(intent);
     }
 
     public void goAchievementPage(View view) {
-        view.startAnimation(animation_clicked);
+        view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, AchievementActivity.class);
         startActivity(intent);
     }
 
     public void goSettingPage(View view) {
-        view.startAnimation(animation_clicked);
+        view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, SettingActivity.class);
         startActivity(intent);
     }
