@@ -90,7 +90,7 @@ public class AlarmService extends Service {
         public void onFinish() {
             alarmClockDAO = new AlarmClockDAO(AlarmService.this);
             DebugTools.Log("Clock " + clock.getId() + " Finish!");
-            showTimeUpMessage();
+            showTimeUpMessage(clock);
             player.start();
             if (clock.isRepeated() && timers != null) {
                 DebugTools.Log("Clock " + clock.getId() + " Restart!");
@@ -118,10 +118,11 @@ public class AlarmService extends Service {
         }
     }
 
-    private void showTimeUpMessage() {
+    private void showTimeUpMessage(AlarmClock clock) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Time Up!!!!")
-                .setTitle("該起身動一動囉~~~")
+        builder.setMessage("你已經坐在椅子上 " + clock.getTime() / 60000 + " 分了！\n" +
+                "該起身動一動了!")
+                .setTitle("起身時間到")
                 .setNegativeButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -219,7 +220,7 @@ public class AlarmService extends Service {
                             newTimer.resume();
                     }
                     break;
-                //delete
+                //alarm_delete
                 case 2:
                     for (Timer timer : timers)
                         if (timer.clock.getId() == id)

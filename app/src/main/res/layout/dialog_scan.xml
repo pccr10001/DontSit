@@ -14,6 +14,11 @@
             app:pv_circular="false"
             android:layout_gravity="center"/>
 
+    <View
+            android:background="@color/Gray"
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"/>
+
     <ListView
             android:id="@+id/ScanListView"
             android:layout_width="fill_parent"

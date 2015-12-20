@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DontSit</string>
+    <string name="app_name">I-Cushion坐墊管理</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="tag">NotSit</string>
@@ -31,5 +31,18 @@
     <string name="Repeat">重複</string>
     <string name="SureToResetSetting">確定要還原設定嗎？</string>
     <string name="SureToClearLog">確定要清除資料嗎？</string>
+    <string name="Default">預設</string>
+    <string name="EveryDayAvgSitTime">每日平均久坐時間(秒)</string>
+    <string name="AvgSitTimeChart">星期平均久坐趨勢圖(秒)</string>
+    <string name="Day30Count">最高統計榜</string>
+    <string name="empty_string"/>
+    <string name="Bluetooth">啟動藍芽</string>
+    <string name="AlarmSetting">鬧鐘設定</string>
+    <string name="CushionState">坐墊狀態</string>
+    <string name="ConnectionSetting">連線設定</string>
+    <string name="RecordCheck">紀錄檢查</string>
+    <string name="TimeAnalysis">時間統計</string>
+    <string name="WeekRecord">近期紀錄</string>
+    <string name="CushionManagement">I-Cushion坐墊管理</string>
     <bool name="debug">true</bool>
 </resources>

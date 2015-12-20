@@ -1,36 +1,27 @@
 package com.example.dontsit.app.SettingActivity;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
 import com.example.dontsit.app.Common.DebugTools;
 import com.example.dontsit.app.Common.NotSitSharedPreferences;
+import com.example.dontsit.app.Database.DayDurationLogDAO;
 import com.example.dontsit.app.Database.DurationLogDAO;
 import com.example.dontsit.app.R;
 import com.rey.material.widget.Switch;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
 
 public class SettingActivity extends AppCompatActivity {
 
     private Spinner ScanModeSpinner;
     private TextView ClockSoundPathEditText;
-    private EditText CushionMacEditText;
+    private TextView CushionMacEditText;
     private Switch DefaultSettingSwitch;
     private Switch ResetDataSwitch;
     private NotSitSharedPreferences preferences;
@@ -39,31 +30,35 @@ public class SettingActivity extends AppCompatActivity {
     private int ScanMode;
     private String ClockPath;
     private String CushionMac;
+    MagicFileChooser chooser;
+
+    private void initToolbar() {
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.setting_toolbar);
+        setSupportActionBar(myToolbar);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
+        initToolbar();
 
         preferences = new NotSitSharedPreferences(this);
-
-        ScanMode = Integer.valueOf(preferences.get(NotSitSharedPreferences.ScanMode));
-        ClockPath = preferences.get(NotSitSharedPreferences.ClockSoundPath);
-        CushionMac = preferences.get(NotSitSharedPreferences.MAC);
-
         ScanModeSpinner = (Spinner) findViewById(R.id.spinner_label);
         String[] items = new String[]{
                 getString(R.string.ScanModeLowFrequency),
                 getString(R.string.ScanModeBalanced),
                 getString(R.string.ScanModeLowLatency)};
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.row_spn, items);
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.row_spn, items);
         adapter.setDropDownViewResource(R.layout.row_spn_dropdown);
+
         ScanModeSpinner.setAdapter(adapter);
-        ScanModeSpinner.setSelection(ScanMode);
         ScanModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
+                IsChanged = preferences.set(NotSitSharedPreferences.ScanMode, String.valueOf(position));
+                setScanMode();
+                setDefaultSettingSwitch();
             }
 
             @Override
@@ -73,16 +68,16 @@ public class SettingActivity extends AppCompatActivity {
         });
 
         ClockSoundPathEditText = (TextView) findViewById(R.id.ClockSoundPathEditText);
-        ClockSoundPathEditText.setText(ClockPath);
         ClockSoundPathEditText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showFileChooser();
+                chooser = new MagicFileChooser(SettingActivity.this);
+                chooser.showFileChooser("audio/*", "請選擇音效檔案", false);
+                setDefaultSettingSwitch();
             }
         });
 
-        CushionMacEditText = (EditText) findViewById(R.id.CushionMacEditText);
-        CushionMacEditText.setText(CushionMac.equals("") ? CushionMac : "");
+        CushionMacEditText = (TextView) findViewById(R.id.CushionMacEditText);
 
         DefaultSettingSwitch = (Switch) findViewById(R.id.DefaultSettingSwitch);
         DefaultSettingSwitch.setOnClickListener(new View.OnClickListener() {
@@ -94,6 +89,14 @@ public class SettingActivity extends AppCompatActivity {
                         preferences.clear(NotSitSharedPreferences.ScanMode);
                         preferences.clear(NotSitSharedPreferences.ClockSoundPath);
                         preferences.clear(NotSitSharedPreferences.MAC);
+
+                        setScanMode();
+                        setCushionMac();
+                        setClockPath();
+
+                        IsChanged = true;
+
+                        DefaultSettingSwitch.setEnabled(false);
                     }
 
                     @Override
@@ -112,7 +115,9 @@ public class SettingActivity extends AppCompatActivity {
                     @Override
                     public void YesThenDo() {
                         new DurationLogDAO(SettingActivity.this).removeAll();
+                        new DayDurationLogDAO(SettingActivity.this).removeAll();
                         ResetDataSwitch.setChecked(true);
+                        DefaultSettingSwitch.setEnabled(false);
                     }
 
                     @Override
@@ -123,29 +128,51 @@ public class SettingActivity extends AppCompatActivity {
             }
 
         });
+
+        setScanMode();
+        setCushionMac();
+        setClockPath();
     }
 
-    private static final int REQ_CODE_PICK_SOUNDFILE = 0;
+    private void setScanMode() {
+        ScanMode = Integer.valueOf(preferences.get(NotSitSharedPreferences.ScanMode));
+        ScanModeSpinner.setSelection(ScanMode);
+    }
 
-    MagicFileChooser chooser;
+    private void setClockPath() {
+        ClockPath = preferences.get(NotSitSharedPreferences.ClockSoundPath);
+        ClockSoundPathEditText.setText(
+                ClockPath.equals(NotSitSharedPreferences.ClockSoundDefaultPath) ?
+                        getString(R.string.Default) : ClockPath);
+    }
 
-    private void showFileChooser() {
-        chooser = new MagicFileChooser(this);
-        chooser.showFileChooser("audio/*", "請選擇音效檔案", false);
+    private void setCushionMac() {
+        CushionMac = preferences.get(NotSitSharedPreferences.MAC);
+        CushionMacEditText.setText(!CushionMac.equals("") ? CushionMac : "");
+    }
 
-//        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-//        intent.setType("audio/*");
-//        startActivityForResult(Intent.createChooser(intent,
-//                "請選擇音效檔案"), REQ_CODE_PICK_SOUNDFILE);
+    private void setDefaultSettingSwitch() {
+        if (IsChanged) {
+            DefaultSettingSwitch.setChecked(false);
+            DefaultSettingSwitch.setEnabled(true);
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         chooser.onActivityResult(requestCode, resultCode, data);
-        if (chooser.getChosenFiles().length == 1) {
-            preferences.set(NotSitSharedPreferences.ClockSoundPath,
-                    chooser.getChosenFiles()[0].toString());
-        }
+        if (chooser.getChosenFiles() != null)
+            if (chooser.getChosenFiles().length == 1) {
+                IsChanged = preferences.set(NotSitSharedPreferences.ClockSoundPath,
+                        chooser.getChosenFiles()[0].toString());
+                setClockPath();
+                DefaultSettingSwitch.setChecked(false);
+                DefaultSettingSwitch.setEnabled(true);
+            }
+    }
+
+    public void BackParent(View view) {
+        onBackPressed();
     }
 
     private interface DialogAction {
@@ -172,4 +199,22 @@ public class SettingActivity extends AppCompatActivity {
                 .show();
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                break;
+        }
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (IsChanged) {
+            preferences.set(NotSitSharedPreferences.IsChanged, "1");
+            DebugTools.Log(preferences.get(NotSitSharedPreferences.IsChanged));
+        }
+        super.onBackPressed();
+    }
 }

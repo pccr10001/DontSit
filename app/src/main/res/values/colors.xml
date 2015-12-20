@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1E90FF</color>
+    <color name="colorPrimary">#FFAF60</color>
+    <color name="colorSecond">#03dc82</color>
+    <color name="colorThird">#00cb77</color>
+    <color name="colorFourth">#93FF93</color>
+    <color name="color_alizarin">#e74c3c</color>
+    <color name="colorDanger">#8E8E8E</color>
+    <color name="colorSafe">#00DB00</color>
     <color name="White">#FFFFFF</color>
     <color name="Ivory">#FFFFF0</color>
     <color name="LightYellow">#FFFFE0</color>

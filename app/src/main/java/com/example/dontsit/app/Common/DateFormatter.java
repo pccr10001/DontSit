@@ -10,8 +10,11 @@ public class DateFormatter {
     private static SimpleDateFormat formatter =
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
+    private static SimpleDateFormat middle_formatter =
+            new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
     private static SimpleDateFormat short_formatter =
-            new SimpleDateFormat("MM/dd-HH", Locale.getDefault());
+            new SimpleDateFormat("MM/dd HH", Locale.getDefault());
 
     public static Date parse(String date) throws ParseException {
         return formatter.parse(date);
@@ -23,5 +26,13 @@ public class DateFormatter {
 
     public static String short_format(Date date) throws ParseException {
         return short_formatter.format(date);
+    }
+
+    public static String middle_format(Date date) throws ParseException {
+        return middle_formatter.format(date);
+    }
+
+    public static Date middle_parse(String date) throws ParseException {
+        return middle_formatter.parse(date);
     }
 }

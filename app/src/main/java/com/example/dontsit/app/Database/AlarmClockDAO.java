@@ -115,7 +115,7 @@ public class AlarmClockDAO {
         intent.putExtra("Operation",AlarmDatabaseChangedReceiver.ACTION_DELETE);
         context.sendBroadcast(intent, AlarmDatabaseChangedReceiver.PERMISSION_DATABASE_CHANGED);
 
-        DebugTools.Log("AlarmDatabase delete " + id);
+        DebugTools.Log("AlarmDatabase alarm_delete " + id);
         // 刪除指定編號資料並回傳刪除是否成功
         return db.delete(TABLE_NAME, where, null) > 0;
     }

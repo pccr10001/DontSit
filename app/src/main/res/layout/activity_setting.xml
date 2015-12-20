@@ -1,8 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
+              android:background="@color/White"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
+
+    <android.support.v7.widget.Toolbar
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/setting_toolbar"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            app:theme="@style/ToolBarStyle"
+            app:popupTheme="@style/ToolbarPopupStyle"
+            android:minHeight="?attr/actionBarSize"
+            android:maxHeight="?attr/actionBarSize">
+
+        <ImageView
+                android:onClick="BackParent"
+                android:src="@drawable/common_back"
+                android:scaleType="fitXY"
+                android:layout_marginEnd="5sp"
+                android:layout_width="25sp"
+                android:layout_height="20sp"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:textSize="25sp"
+                android:textColor="@color/White"
+                android:text="@string/ConnectionSetting"
+                android:gravity="center_vertical"
+                android:id="@+id/toolbar_title"/>
+
+    </android.support.v7.widget.Toolbar>
+
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="5dp"
+            android:background="@drawable/common_toolbar_shadow"/>
 
     <RelativeLayout
             android:orientation="horizontal"
@@ -51,10 +87,9 @@
                 android:layout_height="60sp"/>
 
         <TextView
-                android:background="@drawable/rounded_view"
                 android:layout_margin="10sp"
                 android:id="@+id/ClockSoundPathEditText"
-                android:gravity="bottom"
+                android:gravity="center_vertical|end"
                 android:textSize="20sp"
                 android:minWidth="150sp"
                 android:maxWidth="150sp"
@@ -85,13 +120,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="60sp"/>
 
-        <EditText
-                android:background="@drawable/rounded_view"
+        <TextView
                 android:id="@+id/CushionMacEditText"
                 android:gravity="center_vertical|end"
                 android:paddingStart="8sp"
                 android:paddingEnd="8sp"
                 android:minWidth="150sp"
+                android:textSize="20sp"
                 android:layout_margin="10sp"
                 android:layout_alignParentEnd="true"
                 android:layout_width="wrap_content"

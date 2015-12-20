@@ -7,15 +7,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.*;
-import android.widget.Button;
+import android.widget.AbsListView;
 import android.widget.CheckBox;
 import android.widget.ListView;
+import android.widget.NumberPicker;
 import com.example.dontsit.app.Database.AlarmClockDAO;
 import com.example.dontsit.app.Database.AlarmDatabaseChangedReceiver;
 import com.example.dontsit.app.R;
-import com.gc.materialdesign.views.*;
+import com.gc.materialdesign.views.ButtonFloat;
 import com.rey.material.app.Dialog;
 
 import java.util.List;
@@ -41,6 +42,8 @@ public class AlarmClockActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarmclock);
+        initToolbar();
+
         alarmClockDAO = new AlarmClockDAO(this);
         alarmListView = (ListView) findViewById(R.id.ClockListView);
         if (alarmClockDAO.getCount() == 0)
@@ -53,6 +56,11 @@ public class AlarmClockActivity extends AppCompatActivity
         SetButton = (ButtonFloat) findViewById(R.id.AddButtonFloat);
         SetButton.setOnClickListener(this);
         registerReceiver(mAlarmDatabaseReceiver, mAlarmFilter);
+    }
+
+    private void initToolbar() {
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.alarm_toolbar);
+        setSupportActionBar(myToolbar);
     }
 
     @Override
@@ -189,7 +197,7 @@ public class AlarmClockActivity extends AppCompatActivity
                 return;
 
             AlarmClock newClock = alarmClockDAO.get((long) id);
-            //delete
+            //alarm_delete
             if (newClock == null) {
                 AlarmClock clock = new AlarmClock();
                 clock.setId(id);
@@ -201,4 +209,7 @@ public class AlarmClockActivity extends AppCompatActivity
         }
     };
 
+    public void BackParent(View view) {
+        onBackPressed();
+    }
 }

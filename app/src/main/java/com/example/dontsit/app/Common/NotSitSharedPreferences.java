@@ -21,6 +21,7 @@ public class NotSitSharedPreferences {
     public static final String LastConnectTime = "LastConnectTime";
     public static final String IsSeated = "IsSeated";
     public static final String ClockSoundPath = "ClockSoundPath";
+    public static final String IsChanged = "IsChanged";
 
     public static final String ClockSoundDefaultPath
             = "android.resource://com.example.dontsit.app/" + R.raw.oldalarmclock;
@@ -31,9 +32,9 @@ public class NotSitSharedPreferences {
         editor = settings.edit();
     }
 
-    public void set(String key, String value) {
+    public boolean set(String key, String value) {
         if (get(key).equals(value))
-            return;
+            return false;
         editor.putString(key, value);
         editor.apply();
         if (key.equals(IsSeated)) {
@@ -44,10 +45,14 @@ public class NotSitSharedPreferences {
             Intent intent = new Intent(BLEStateChangedReceiver.ACTION_STATE_CHANGED);
             context.sendBroadcast(intent, BLEStateChangedReceiver.PERMISSION_STATE_CHANGED);
         }
+        return true;
     }
 
     public String get(String key) {
-        if (key.equals(BLEState) || key.equals(ScanMode))
+        if (key.equals(BLEState) ||
+                key.equals(ScanMode) ||
+                key.equals(IsChanged) ||
+                key.equals(IsSeated))
             return settings.getString(key, "0");
         if (key.equals(ClockSoundPath))
             return settings.getString(key, ClockSoundDefaultPath);
@@ -63,4 +68,5 @@ public class NotSitSharedPreferences {
         editor.clear();
         editor.commit();
     }
+
 }

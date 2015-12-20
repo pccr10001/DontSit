@@ -42,7 +42,7 @@ public class CushionUpdateService extends Service implements BLEConnectible {
 //        DebugTools.Log(device.getAddress());
 //        DebugTools.Log(target_mac);
 //        DebugTools.Log(Boolean.valueOf(device.getAddress().equals(target_mac)).toString());if (device.getAddress().equals(target_mac)) {
-        if(target_mac.equals(device.getAddress())) {
+        if (target_mac.equals(device.getAddress())) {
             connector.Connect(device);
             connector.ScanWith(false);
         }

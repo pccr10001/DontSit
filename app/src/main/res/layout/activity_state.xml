@@ -8,7 +8,7 @@
     <android.support.v7.widget.Toolbar
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/sitTime_toolbar"
+            android:id="@+id/state_toolbar"
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
             app:theme="@style/ToolBarStyle"
@@ -28,7 +28,7 @@
                 android:layout_height="match_parent"
                 android:textSize="25sp"
                 android:textColor="@color/White"
-                android:text="@string/WeekRecord"
+                android:text="@string/CushionState"
                 android:gravity="center_vertical"
                 android:id="@+id/toolbar_title"/>
 
@@ -39,12 +39,14 @@
             android:layout_height="5dp"
             android:background="@drawable/common_toolbar_shadow"/>
 
-    <com.github.mikephil.charting.charts.LineChart
+    <ListView
+            android:id="@+id/CushionStateListView"
             android:layout_margin="10sp"
-            android:id="@+id/sit_time_chart"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_marginEnd="5dp"
-            android:paddingBottom="12dp"/>
+            android:dividerHeight="10sp"
+            android:divider="@null"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+    </ListView>
 
 </LinearLayout>

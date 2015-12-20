@@ -6,6 +6,8 @@ import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import com.example.dontsit.app.Common.*;
@@ -28,21 +30,21 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
-public class SitTimeActivity extends AppCompatActivity
-        implements SeekBar.OnSeekBarChangeListener, YAxisValueFormatter {
+public class SitTimeActivity extends AppCompatActivity implements YAxisValueFormatter {
 
     private LineChart SitTimeChart;
-    private SeekBar DaySeekBar;
-    private TextView DayTextView;
     private Typeface typeface = Typeface.DEFAULT;
     private DurationLogDAO logDAO;
-    private float textSize = 14f;
+    private final static float textSize = 14f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sittime);
+        initToolbar();
+
         logDAO = new DurationLogDAO(this);
         if (logDAO.getCount() == 0)
             try {
@@ -53,8 +55,6 @@ public class SitTimeActivity extends AppCompatActivity
         logDAO.close();
 
         SitTimeChart = (LineChart) findViewById(R.id.sit_time_chart);
-        DaySeekBar = (SeekBar) findViewById(R.id.day_seekBar);
-        DayTextView = (TextView) findViewById(R.id.day_textView);
 
         SitTimeChart.setDescription("");
         SitTimeChart.setMaxVisibleValueCount(60);
@@ -96,36 +96,21 @@ public class SitTimeActivity extends AppCompatActivity
         l.setTextSize(textSize);
         l.setXEntrySpace(4f);
 
-        DayTextView.setText("7天內");
-        DaySeekBar.setProgress(7);
-        DaySeekBar.setMax(365);
-        DaySeekBar.setOnSeekBarChangeListener(this);
-
         CustomMarkerView mv = new CustomMarkerView(getApplicationContext(), R.layout.marketview);
         SitTimeChart.setMarkerView(mv);
 
         setData(7);
     }
 
+    private void initToolbar() {
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.sitTime_toolbar);
+        setSupportActionBar(myToolbar);
+    }
+
     private DecimalFormat mFormat = new DecimalFormat("###,###,###,##0");
 
     public String getFormattedValue(float value, YAxis yAxis) {
         return mFormat.format(value);
-    }
-
-    private class ChartData {
-        String date;
-        int time = 0;
-
-        public ChartData(String date, int time) {
-            this.date = date;
-            this.time = time;
-        }
-
-        @Override
-        public String toString() {
-            return date + " - " + time;
-        }
     }
 
     private ArrayList<String> xVals;
@@ -135,61 +120,29 @@ public class SitTimeActivity extends AppCompatActivity
         logDAO = new DurationLogDAO(this);
 
         try {
-            Calendar calendar1 = Calendar.getInstance(), calendar2 = Calendar.getInstance();
-            calendar1.set(Calendar.HOUR_OF_DAY, 24);
-            calendar1.set(Calendar.MINUTE, 0);
-            calendar1.set(Calendar.SECOND, 0);
-            calendar1.add(Calendar.DAY_OF_YEAR, -range);
+//            for (Duration duration : logDAO.getAll())
+//                DebugTools.Log(duration);
 
-            List<Duration> list = logDAO.getBetween(calendar1.getTime(), calendar2.getTime());
+            Calendar calendar1 = Calendar.getInstance();
+            calendar1.setTimeZone(TimeZone.getDefault());
+            calendar1.set(Calendar.HOUR_OF_DAY, 23);
+            calendar1.set(Calendar.MINUTE, 59);
+            calendar1.set(Calendar.SECOND, 59);
+            calendar1.add(Calendar.DAY_OF_YEAR, -range + 1);
 
-            logDAO.close();
-
-            if (list.size() == 0) return;
-
-            List<ChartData> datas = new ArrayList<ChartData>();
             ArrayList<Entry> yVals1 = new ArrayList<Entry>();
 
-            Duration first = list.get(0);
-            String LastDurationDayHour = DateFormatter.short_format(first.getStartTime());
-            datas.add(new ChartData(LastDurationDayHour, first.getTime()));
-
-            boolean IsSameHour;
-            ChartData temp = datas.get(0);
-            for (int i = 1; i < list.size(); i++) {
-                Duration duration = list.get(i);
-                IsSameHour = DateFormatter.short_format(duration.getStartTime()).equals(LastDurationDayHour);
-                LastDurationDayHour = DateFormatter.short_format(duration.getStartTime());
-                if (IsSameHour)
-                    temp.time += duration.getTime();
-                else {
-//                    DebugTools.Log(LastDurationDayHour + " " + (temp.time / 1000));
-                    datas.add(new ChartData(LastDurationDayHour, duration.getTime()));
-                    temp = datas.get(datas.size() - 1);
-                }
-            }
-//            DebugTools.Log(datas.toString());
-
             xVals = new ArrayList<String>();
-            int count = 0;
-            for (int i = 0; i < range * 24; i++) {
-                if (count < datas.size())
-                    temp = datas.get(count);
-                else
-                    temp = new ChartData("", 0);
-                String now = DateFormatter.short_format(calendar1.getTime());
-//                DebugTools.Log(DateFormatter.short_format(calendar1.getTime()));
-                if (now.equals(temp.date)) {
-                    count++;
-                    yVals1.add(new Entry(temp.time / 1000, i));
-                } else {
-                    yVals1.add(new Entry(0, i));
-                }
-                xVals.add(now);
+            for (int i = 0; i < 6 * 24 + calendar1.get(Calendar.HOUR_OF_DAY); i++) {
+                yVals1.add(new Entry(logDAO.getHourTimeAt(calendar1.getTime()), i));
+//                DebugTools.Log(calendar1.getTime());
+                xVals.add(DateFormatter.short_format(calendar1.getTime()));
                 calendar1.add(Calendar.HOUR_OF_DAY, 1);
             }
 
-            LineDataSet set1 = new LineDataSet(yVals1, "坐下時間(秒)");
+            logDAO.close();
+
+            LineDataSet set1 = new LineDataSet(yVals1, "近7日每小時坐著時間(秒)");
             set1.setAxisDependency(YAxis.AxisDependency.RIGHT);
             set1.setDrawFilled(true);
             set1.setDrawCircles(false);
@@ -204,9 +157,13 @@ public class SitTimeActivity extends AppCompatActivity
 
             SitTimeChart.setData(data);
             SitTimeChart.invalidate();
-        } catch (ParseException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void BackParent(View view) {
+        onBackPressed();
     }
 
     public class CustomMarkerView extends MarkerView {
@@ -239,27 +196,6 @@ public class SitTimeActivity extends AppCompatActivity
             // this will cause the marker-view to be above the selected value
             return -getHeight();
         }
-
-    }
-
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        int value = seekBar.getProgress();
-        if (value == 0) {
-            value = 1;
-            DaySeekBar.setProgress(value);
-        }
-        setData(value);
-        DayTextView.setText(value + " 天內");
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-
-    }
-
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
 
     }
 }

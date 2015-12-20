@@ -1,28 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:orientation="vertical"
-                xmlns:materialdesign="http://schemas.android.com/apk/res-auto"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:background="@color/White"
+              xmlns:materialdesign="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
 
-    <ListView
-            android:layout_margin="10sp"
-            android:divider="@null"
-            android:dividerHeight="10sp"
-            android:id="@+id/ClockListView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-
-    <com.gc.materialdesign.views.ButtonFloat
-            android:id="@+id/AddButtonFloat"
-            android:layout_width="wrap_content"
+    <android.support.v7.widget.Toolbar
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/alarm_toolbar"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginEnd="24dp"
-            android:background="@color/colorPrimary"
-            materialdesign:animate="true"
-            materialdesign:iconDrawable="@drawable/add"
-            android:layout_centerHorizontal="true"/>
+            android:layout_width="fill_parent"
+            app:theme="@style/ToolBarStyle"
+            app:popupTheme="@style/ToolbarPopupStyle"
+            android:minHeight="?attr/actionBarSize">
 
-</RelativeLayout>
+        <ImageView
+                android:onClick="BackParent"
+                android:src="@drawable/common_back"
+                android:scaleType="fitXY"
+                android:layout_marginEnd="5sp"
+                android:layout_width="25sp"
+                android:layout_height="20sp"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:textSize="25sp"
+                android:textColor="@color/White"
+                android:text="@string/AlarmSetting"
+                android:gravity="center_vertical"
+                android:id="@+id/toolbar_title"/>
+
+    </android.support.v7.widget.Toolbar>
+
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="5dp"
+            android:background="@drawable/common_toolbar_shadow"/>
+
+    <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+
+        <ListView
+                android:layout_margin="10sp"
+                android:divider="@null"
+                android:dividerHeight="10sp"
+                android:id="@+id/ClockListView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        <com.gc.materialdesign.views.ButtonFloat
+                android:id="@+id/AddButtonFloat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginEnd="24dp"
+                android:background="@color/colorPrimary"
+                materialdesign:animate="true"
+                materialdesign:iconDrawable="@drawable/alarm_add"
+                android:layout_centerHorizontal="true"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

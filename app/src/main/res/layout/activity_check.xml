@@ -8,7 +8,7 @@
     <android.support.v7.widget.Toolbar
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/sitTime_toolbar"
+            android:id="@+id/check_toolbar"
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
             app:theme="@style/ToolBarStyle"
@@ -28,7 +28,7 @@
                 android:layout_height="match_parent"
                 android:textSize="25sp"
                 android:textColor="@color/White"
-                android:text="@string/WeekRecord"
+                android:text="@string/RecordCheck"
                 android:gravity="center_vertical"
                 android:id="@+id/toolbar_title"/>
 
@@ -39,12 +39,45 @@
             android:layout_height="5dp"
             android:background="@drawable/common_toolbar_shadow"/>
 
-    <com.github.mikephil.charting.charts.LineChart
-            android:layout_margin="10sp"
-            android:id="@+id/sit_time_chart"
+    <LinearLayout
+            android:layout_marginTop="10sp"
+            android:layout_marginBottom="10sp"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_marginEnd="5dp"
-            android:paddingBottom="12dp"/>
+            android:layout_height="wrap_content">
+
+        <TextView
+                android:text="20 / 100"
+                android:textSize="18sp"
+                android:gravity="center"
+                android:id="@+id/CheckTextView"
+                android:layout_marginStart="10sp"
+                android:layout_marginEnd="10sp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"/>
+
+        <ProgressBar
+                android:max="100"
+                android:layout_gravity="center"
+                android:id="@+id/CheckProgressBar"
+                android:layout_marginEnd="10sp"
+                android:progressDrawable="@drawable/check_progress_bar"
+                style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"/>
+
+    </LinearLayout>
+
+    <View
+            android:layout_marginTop="5sp"
+            android:layout_marginBottom="5sp"
+            android:background="@color/Gray"
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"/>
+
+    <ListView
+            android:scrollbars="none"
+            android:id="@+id/ChecklistView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
 
 </LinearLayout>

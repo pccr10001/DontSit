@@ -6,7 +6,7 @@ import com.example.dontsit.app.R;
 
 public class DebugTools {
 
-    private static Boolean isDebug;
+    private static Boolean isDebug = false;
     public static String TAG;
 
     public static void initTools(Resources resources) {

@@ -1,5 +1,6 @@
 package com.example.dontsit.app;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,23 +20,20 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
-import com.example.dontsit.app.AchievementActivity.AchievementActivity;
+import com.example.dontsit.app.CheckActivity.CheckActivity;
 import com.example.dontsit.app.AlarmClockActivity.AlarmClockActivity;
+import com.example.dontsit.app.AnalysisActivity.AnalysisActivity;
 import com.example.dontsit.app.Common.*;
 import com.example.dontsit.app.CushionStateActivity.CushionStateActivity;
-import com.example.dontsit.app.Database.BLEStateChangedReceiver;
+import com.example.dontsit.app.Database.*;
 import com.example.dontsit.app.Main.AlarmService;
 import com.example.dontsit.app.Main.CushionUpdateService;
 import com.example.dontsit.app.Main.ScanListViewAdapter;
 import com.example.dontsit.app.SettingActivity.SettingActivity;
 import com.example.dontsit.app.SitTimeActivity.SitTimeActivity;
-import com.rey.material.app.SimpleDialog;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class MainActivity extends AppCompatActivity implements BLEConnectible {
 
@@ -44,7 +43,6 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
     private boolean AlarmServiceBound = false;
     private final static int REQUEST_ENABLE_BT = 1;
     private Animation ClickedAnimation;
-    private MenuItem MenuOperationItem;
     private String mMac;
     private NotSitSharedPreferences mPreferences;
 
@@ -55,9 +53,18 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initToolbar();
         initPreferences();
         initDebugMode();
-        registerReceiver(mReceiver, mFilter);
+        refreshLog();
+        registerReceiver(mBLEStateReceiver, mBLEFilter);
+    }
+
+    private void initToolbar() {
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.main_toolbar);
+        setSupportActionBar(myToolbar);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
     }
 
     private void initPreferences() {
@@ -66,6 +73,29 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         ScanMode = mode.equals("") ? 0 : Integer.valueOf(mode);
         mMac = mPreferences.get(NotSitSharedPreferences.MAC);
         ClickedAnimation = AnimationUtils.loadAnimation(this, R.anim.image_click);
+    }
+
+    private void initDebugMode() {
+        DebugTools.initTools(getResources());
+    }
+
+    @Override
+    protected void onResume() {
+        if (mPreferences.get(NotSitSharedPreferences.IsChanged).equals("1")) {
+            if (mPreferences.get(NotSitSharedPreferences.MAC).equals("")) {
+                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                unbindService();
+                StopService();
+                mMac = null;
+                if (adapter == null || !adapter.isEnabled()) {
+                    ShowMenuItem(EnableIndex);
+                } else {
+                    ShowMenuItem(ScanIndex);
+                }
+                mPreferences.set(NotSitSharedPreferences.IsChanged, "0");
+            }
+        }
+        super.onResume();
     }
 
     private void checkBLE() {
@@ -77,23 +107,46 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         //Start Setting
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null || !adapter.isEnabled()) {
+            ShowMenuItem(EnableIndex);
             showRequestMessage(getString(R.string.system_error),
                     getString(R.string.enableBLE), new DialogAction() {
-                @Override
-                public void Action() {
-                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-                }
-            });
-        } else if (!mMac.equals("")) {
-            initBLEService();
-            initAlarmService();
+                        @Override
+                        public void Action() {
+                            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                        }
+                    });
         } else {
-            FirstCheckConnector = new BLEConnector(adapter, this);
-            FirstCheckConnector.setScanMode(ScanMode);
-            FirstCheckConnector.ScanWith(true);
-            initDialog();
+            if (!mMac.equals(""))
+                BluetoothStateAction(Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState)));
+            else
+                ShowMenuItem(ScanIndex);
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (resultCode == Activity.RESULT_OK) {
+                    checkBLE();
+                }
+                break;
+        }
+    }
+
+    private void StartScan() {
+        if (mMac != null) {
+            if (!mMac.equals("")) {
+                initBLEService();
+                initAlarmService();
+                return;
+            }
+        }
+        FirstCheckConnector = new BLEConnector(BluetoothAdapter.getDefaultAdapter(), this);
+        FirstCheckConnector.setScanMode(ScanMode);
+        FirstCheckConnector.ScanWith(true);
+        initDialog();
     }
 
     private interface DialogAction {
@@ -136,43 +189,37 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         //do nothing
     }
 
-    private IntentFilter mFilter = new IntentFilter(BLEStateChangedReceiver.ACTION_STATE_CHANGED);
+    private IntentFilter mBLEFilter = new IntentFilter(BLEStateChangedReceiver.ACTION_STATE_CHANGED);
 
-    private BLEStateChangedReceiver mReceiver = new BLEStateChangedReceiver() {
+    private BLEStateChangedReceiver mBLEStateReceiver = new BLEStateChangedReceiver() {
         public void onReceive(Context context, Intent intent) {
 //            DebugTools.Log(mPreferences.get(NotSitSharedPreferences.BLEState));
-            int state = Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState));
-            switch (state) {
-                case BluetoothGatt.STATE_CONNECTED:
-                    MenuOperationItem.setTitle(getString(R.string.disconnect));
-                    break;
-                case BluetoothGatt.STATE_DISCONNECTED:
-                    MenuOperationItem.setTitle(getString(R.string.connect));
-                    break;
-            }
+            BluetoothStateAction(Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState)));
         }
     };
 
     private void initBLEService() {
         if (mBleService == null) {
-            DebugTools.Log("initBLEService");
+            DebugTools.Log("bindBLEService");
             Intent intent = new Intent(this, CushionUpdateService.class);
             bindService(intent, BluetoothServiceConnection, Context.BIND_AUTO_CREATE);
-            startService(intent);
+            if (!BLEServiceBound) {
+                DebugTools.Log("initBLEService");
+                startService(intent);
+            }
         }
     }
 
     private void initAlarmService() {
         if (mAlarmService == null) {
-            DebugTools.Log("initAlarmService");
+            DebugTools.Log("bindAlarmService");
             Intent intent = new Intent(this, AlarmService.class);
             bindService(intent, AlarmServiceConnection, Context.BIND_AUTO_CREATE);
-            startService(intent);
+            if (!AlarmServiceBound) {
+                DebugTools.Log("initAlarmService");
+                startService(intent);
+            }
         }
-    }
-
-    private void initDebugMode() {
-        DebugTools.initTools(getResources());
     }
 
     private BaseAdapter adapter;
@@ -208,25 +255,37 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         FirstCheckConnector.ScanWith(false);
         FirstCheckConnector = null;
 
-        checkBLE();
+        StartScan();
     }
+
+    private MenuItem MenuEnableItem;
+    private MenuItem MenuScanItem;
+    private MenuItem MenuConnectItem;
+    private MenuItem MenuDisconnectItem;
+
+    private static int EnableIndex = 0;
+    private static int ScanIndex = 1;
+    private static int ConnectIndex = 2;
+    private static int DisconnectIndex = 3;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        MenuOperationItem = menu.findItem(R.id.action_operation);
-        if (!mMac.equals("")) {
-            int state = Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState));
-            switch (state) {
-                case BluetoothGatt.STATE_CONNECTED:
-                    MenuOperationItem.setTitle(getString(R.string.disconnect));
-                    break;
-                case BluetoothGatt.STATE_DISCONNECTED:
-                    MenuOperationItem.setTitle(getString(R.string.connect));
-                    break;
-            }
-        }
+        MenuEnableItem = menu.findItem(R.id.action_bluetooth);
+        MenuScanItem = menu.findItem(R.id.action_scan);
+        MenuConnectItem = menu.findItem(R.id.action_connect);
+        MenuDisconnectItem = menu.findItem(R.id.action_disconnect);
+
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null || !adapter.isEnabled())
+            ShowMenuItem(EnableIndex);
+        else
+            ShowMenuItem(ScanIndex);
+
+        if (!mMac.equals(""))
+            BluetoothStateAction(Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState)));
+
         return true;
     }
 
@@ -235,34 +294,65 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_operation) {
-            if (item.getTitle().equals(getString(R.string.disconnect))) {
-                DebugTools.Log("Stop Service");
-                if (BluetoothServiceConnection != null)
-                    unbindService(BluetoothServiceConnection);
-                Intent intent = new Intent(MainActivity.this, CushionUpdateService.class);
-                stopService(intent);
-                mBleService = null;
-                if (AlarmServiceConnection != null)
-                    unbindService(AlarmServiceConnection);
-                intent = new Intent(MainActivity.this, AlarmService.class);
-                stopService(intent);
-                mAlarmService = null;
-            } else {
+        switch (item.getItemId()) {
+            case R.id.action_bluetooth:
                 checkBLE();
-            }
-            return true;
+                break;
+            case R.id.action_scan:
+                StartScan();
+                break;
+            case R.id.action_connect:
+                StartScan();
+                break;
+            case R.id.action_disconnect:
+                unbindService();
+                StopService();
+                break;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    private void BluetoothStateAction(int state) {
+        switch (state) {
+            case BluetoothGatt.STATE_CONNECTED:
+                ShowMenuItem(DisconnectIndex);
+                break;
+            case BluetoothGatt.STATE_DISCONNECTED:
+                if (!mPreferences.get(NotSitSharedPreferences.MAC).equals(""))
+                    ShowMenuItem(ConnectIndex);
+                break;
+        }
+    }
+
+    private void ShowMenuItem(int index) {
+        MenuEnableItem.setVisible(false);
+        MenuScanItem.setVisible(false);
+        MenuConnectItem.setVisible(false);
+        MenuDisconnectItem.setVisible(false);
+
+        switch (index) {
+            case 0:
+                MenuEnableItem.setVisible(true);
+                break;
+            case 1:
+                MenuScanItem.setVisible(true);
+                break;
+            case 2:
+                MenuConnectItem.setVisible(true);
+                break;
+            case 3:
+                MenuDisconnectItem.setVisible(true);
+                break;
+        }
+    }
+
     @Override
     protected void onDestroy() {
-        unregisterReceiver(mReceiver);
         super.onDestroy();
+        unbindService();
+        StopService();
+        unregisterReceiver(mBLEStateReceiver);
     }
 
     private ServiceConnection BluetoothServiceConnection = new ServiceConnection() {
@@ -315,7 +405,7 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
 
     public void goAchievementPage(View view) {
         view.startAnimation(ClickedAnimation);
-        Intent intent = new Intent(this, AchievementActivity.class);
+        Intent intent = new Intent(this, CheckActivity.class);
         startActivity(intent);
     }
 
@@ -323,5 +413,59 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         view.startAnimation(ClickedAnimation);
         Intent intent = new Intent(this, SettingActivity.class);
         startActivity(intent);
+    }
+
+    public void goAnalysisPage(View view) {
+        view.startAnimation(ClickedAnimation);
+        Intent intent = new Intent(this, AnalysisActivity.class);
+        startActivity(intent);
+    }
+
+    private void unbindService() {
+        if (mBleService != null && BLEServiceBound)
+            unbindService(BluetoothServiceConnection);
+        if (mAlarmService != null && AlarmServiceBound)
+            unbindService(AlarmServiceConnection);
+    }
+
+    private void StopService() {
+        DebugTools.Log("Stop Service");
+
+        Intent intent = new Intent(MainActivity.this, CushionUpdateService.class);
+        stopService(intent);
+        mBleService = null;
+
+        intent = new Intent(MainActivity.this, AlarmService.class);
+        stopService(intent);
+        mAlarmService = null;
+    }
+
+    private void refreshLog() {
+        try {
+            DayDurationLogDAO logDayDAO = new DayDurationLogDAO(this);
+            DurationLogDAO logDAO = new DurationLogDAO(this);
+
+            Calendar SevenDayAge = Calendar.getInstance();
+            SevenDayAge.setTimeZone(TimeZone.getDefault());
+            SevenDayAge.set(Calendar.HOUR_OF_DAY, 0);
+            SevenDayAge.set(Calendar.MINUTE, 0);
+            SevenDayAge.set(Calendar.SECOND, 0);
+            SevenDayAge.add(Calendar.DAY_OF_YEAR, -6);
+            DebugTools.Log("*" + SevenDayAge.getTime());
+            DebugTools.Log("*" + logDAO.getBefore(SevenDayAge.getTime()));
+
+            if (logDAO.getBefore(SevenDayAge.getTime()).size() > 0) {
+                SevenDayAge.add(Calendar.SECOND, -1);
+                DayDuration duration = new DayDuration();
+                duration.setSitTime(logDAO.getDayTimeAt(SevenDayAge.getTime()));
+                duration.setChangeTime(logDAO.getDayTimesAt(SevenDayAge.getTime()));
+                duration.setDate(SevenDayAge.getTime());
+                logDayDAO.insert(duration);
+                logDAO.deleteBefore(SevenDayAge.getTime());
+            }
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
 }

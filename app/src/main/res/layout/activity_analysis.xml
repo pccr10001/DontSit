@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:background="@color/White"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <android.support.v7.widget.Toolbar
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/analysis_toolbar"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            app:theme="@style/ToolBarStyle"
+            app:popupTheme="@style/ToolbarPopupStyle"
+            android:minHeight="?attr/actionBarSize">
+
+        <ImageView
+                android:onClick="BackParent"
+                android:src="@drawable/common_back"
+                android:scaleType="fitXY"
+                android:layout_marginEnd="5sp"
+                android:layout_width="25sp"
+                android:layout_height="20sp"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:textSize="25sp"
+                android:textColor="@color/White"
+                android:text="@string/TimeAnalysis"
+                android:gravity="center_vertical"
+                android:id="@+id/toolbar_title"/>
+
+    </android.support.v7.widget.Toolbar>
+
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="5dp"
+            android:background="@drawable/common_toolbar_shadow"/>
+
+    <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp">
+
+                <LinearLayout
+                        android:id="@+id/AnalysisPieChartListView"
+                        android:padding="10sp"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_height="match_parent"
+                        android:layout_width="0dp">
+
+                    <TextView
+                            android:text="@string/EveryDayAvgSitTime"
+                            android:textSize="20sp"
+                            android:layout_marginBottom="5sp"
+                            android:gravity="center"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+                <com.github.mikephil.charting.charts.BarChart
+                        android:padding="5sp"
+                        android:layout_weight="2"
+                        android:id="@+id/AnalysisPieChart"
+                        android:layout_height="match_parent"
+                        android:layout_width="0dp"/>
+
+            </LinearLayout>
+
+            <View
+                    android:layout_marginTop="5sp"
+                    android:layout_marginBottom="5sp"
+                    android:background="@color/Gray"
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"/>
+
+            <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp">
+
+                <TextView
+                        android:layout_weight="1"
+                        android:text="@string/AvgSitTimeChart"
+                        android:textSize="20sp"
+                        android:gravity="center"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"/>
+
+                <com.github.mikephil.charting.charts.LineChart
+                        android:layout_marginStart="5sp"
+                        android:layout_marginEnd="5sp"
+                        android:layout_weight="6"
+                        android:id="@+id/AnalysisHorizontalBarChart"
+                        android:layout_height="0dp"
+                        android:layout_width="match_parent"/>
+
+            </LinearLayout>
+
+            <!--<View-->
+            <!--android:layout_marginTop="5sp"-->
+            <!--android:layout_marginBottom="5sp"-->
+            <!--android:background="@color/Gray"-->
+            <!--android:layout_width="fill_parent"-->
+            <!--android:layout_height="1dp"/>-->
+
+            <!--<LinearLayout-->
+            <!--android:orientation="horizontal"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="200dp">-->
+
+            <!--<LinearLayout-->
+            <!--android:id="@+id/AnalysisBarChartListView"-->
+            <!--android:padding="10sp"-->
+            <!--android:layout_weight="1"-->
+            <!--android:orientation="vertical"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:layout_width="0dp"/>-->
+
+            <!--<com.github.mikephil.charting.charts.BarChart-->
+            <!--android:layout_weight="2"-->
+            <!--android:id="@+id/AnalysisBarChart"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:layout_width="0dp"/>-->
+
+            <!--</LinearLayout>-->
+
+            <View
+                    android:layout_marginTop="5sp"
+                    android:layout_marginBottom="5sp"
+                    android:background="@color/Gray"
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"/>
+
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp">
+
+                <com.github.mikephil.charting.charts.CombinedChart
+                        android:layout_weight="5"
+                        android:paddingStart="10sp"
+                        android:paddingEnd="10sp"
+                        android:id="@+id/AnalysisCombinedChart"
+                        android:layout_height="match_parent"
+                        android:layout_width="0dp"/>
+
+                <LinearLayout
+                        android:id="@+id/AnalysisCombinedChartListView"
+                        android:padding="10sp"
+                        android:layout_weight="2"
+                        android:orientation="vertical"
+                        android:layout_height="match_parent"
+                        android:layout_width="0dp">
+
+                    <TextView
+                            android:text="@string/Day30Count"
+                            android:textSize="16sp"
+                            android:gravity="center"
+                            android:layout_marginBottom="10sp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>
