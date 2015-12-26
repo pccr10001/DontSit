@@ -280,12 +280,12 @@ public class MainActivity extends AppCompatActivity implements BLEConnectible {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter == null || !adapter.isEnabled())
             ShowMenuItem(EnableIndex);
-        else
-            ShowMenuItem(ScanIndex);
-
-        if (!mMac.equals(""))
-            BluetoothStateAction(Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState)));
-
+        else {
+            if (!mMac.equals(""))
+                BluetoothStateAction(Integer.valueOf(mPreferences.get(NotSitSharedPreferences.BLEState)));
+            else
+                ShowMenuItem(ScanIndex);
+        }
         return true;
     }
 

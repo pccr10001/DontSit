@@ -340,15 +340,15 @@ public class DurationLogDAO {
     public void generate() throws ParseException {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeZone(TimeZone.getDefault());
-        int gap = 8, count = calendar.get(Calendar.HOUR_OF_DAY) / gap + 24 / gap * 6;
+        int gap = 3, count = calendar.get(Calendar.HOUR_OF_DAY) / gap + 24 / gap * 6;
         List<Duration> durations = new ArrayList<Duration>();
         calendar.add(Calendar.HOUR_OF_DAY, 1);
         for (int i = 0; i < count; i++) {
             Duration duration = new Duration();
             calendar.add(Calendar.HOUR_OF_DAY, -gap);
             duration.setStartTime(calendar.getTime());
-            if (new Random().nextInt(7) < 5) {
-                duration.setTime(new Random().nextInt(3600 * gap) * 1000);
+            if (new Random().nextInt(24 / gap + 1) < 48 / gap / gap) {
+                duration.setTime(((3600 * gap / 2) + new Random().nextInt(3600 * (gap / 2 + 1))) * 1000);
                 durations.add(duration);
             }
             DebugTools.Log(duration);

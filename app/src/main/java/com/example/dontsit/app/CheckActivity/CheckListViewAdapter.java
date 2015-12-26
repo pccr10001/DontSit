@@ -58,7 +58,7 @@ public class CheckListViewAdapter extends BaseAdapter {
         }
 
         holder.CheckImageView.setImageResource(
-                checkItem.isChecked()? R.drawable.check_box : R.drawable.check_green);
+                checkItem.isChecked() ? R.drawable.check_green : R.drawable.check_box);
         holder.CheckDescription.setText(checkItem.getDescription());
 
         return convertView;

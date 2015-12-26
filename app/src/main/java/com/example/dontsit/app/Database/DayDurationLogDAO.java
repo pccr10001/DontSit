@@ -171,7 +171,7 @@ public class DayDurationLogDAO {
             DayDuration duration = new DayDuration();
             calendar.add(Calendar.DAY_OF_YEAR, -1);
             duration.setDate(calendar.getTime());
-            duration.setSitTime(new Random().nextInt(3600 * gap));
+            duration.setSitTime((3600 * gap / 2) + new Random().nextInt(3600 * (gap / 2 + 1)));
             duration.setChangeTime(new Random().nextInt(20));
             durations.add(duration);
 //            DebugTools.Log(duration);

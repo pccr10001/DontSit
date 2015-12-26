@@ -65,7 +65,7 @@ public class CheckActivity extends AppCompatActivity {
 
         try {
             durations = logDAO.getAll();
-            dayDurations = logDAO1.getAll();
+            dayDurations = logDAO1.getByRange(23);
             Collections.reverse(dayDurations);
             Calendar Someday = Calendar.getInstance();
             Someday.setTimeZone(TimeZone.getDefault());
@@ -91,7 +91,7 @@ public class CheckActivity extends AppCompatActivity {
     }
 
     //    private String[] Days = {"日", "一", "二", "三", "四", "五", "六"};
-    private int[][] checks = {{3, 5, 7}, {5, 10, 15}, {5, 15, 25}};
+    private int[][] checks = {{3, 5, 7}, {10, 20, 30}, {5, 15, 25}};
     private int check_time = 0;
     private static final int limit = 8;
     private static final int lower_limit = 2;
@@ -99,13 +99,16 @@ public class CheckActivity extends AppCompatActivity {
 
     private void CheckItems() {
         Calendar temp = Calendar.getInstance();
-        int tip = 7, overtime[] = {0, 0, 0, 0};
+        int tip = 7, safeTime[] = {0, 0, 0, 0};
 
 
         //check max overtime a week
-        for (int i = 0; i < tip; i++)
-            if (dayDurations.get(i).getSitTime() > limit)
-                overtime[0]++;
+        for (int i = 0; i < tip; i++) {
+            if (dayDurations.get(i).getSitTime() < limit * 3600)
+                safeTime[0]++;
+//            DebugTools.Log(dayDurations.get(i));
+        }
+//        DebugTools.Log(safeTime[0]);
 
         //check one time overtime a week
         int[] count = new int[]{0, 0, 0, 0, 0, 0, 0};
@@ -113,30 +116,34 @@ public class CheckActivity extends AppCompatActivity {
             temp.setTime(duration.getStartTime());
             if (duration.getTime() / 1000 > lower_limit * 3600) {
                 count[temp.get(Calendar.DAY_OF_WEEK) - 1]++;
-                overtime[1]++;
+                safeTime[1]++;
             }
-//            DebugTools.Log(duration + ", " + count[temp.get(Calendar.DAY_OF_WEEK) - 1]);
+//            DebugTools.Log(duration);
         }
+//        DebugTools.Log(safeTime[1]);
 
         //check max overtime a month
-        for (DayDuration aDay30Record : dayDurations)
-            if (aDay30Record.getSitTime() > limit)
-                overtime[2]++;
+        for (DayDuration duration : dayDurations) {
+            if (duration.getSitTime() < limit * 3600)
+                safeTime[2]++;
+//            DebugTools.Log(duration);
+        }
+//        DebugTools.Log(safeTime[2]);
 
         for (int i = 0; i < checks[0].length; i++) {
             CheckItem item = new CheckItem("過去 " + tip + " 天有 "
                     + checks[0][i] + " 天少於 " + limit + " 小時", 0);
-            if (overtime[0] > checks[0][i])
+            if (safeTime[0] >= checks[0][i])
                 item.setChecked(true);
             items.add(item);
             item = new CheckItem("過去 " + tip + " 天每次超過 " +
                     lower_limit + " 小時少於 " + checks[1][i] + " 次", 1);
-            if (overtime[1] > checks[1][i])
+            if (safeTime[1] <= checks[1][i])
                 item.setChecked(true);
             items.add(item);
             item = new CheckItem("過去 " + day_bound + " 天有 "
                     + checks[2][i] + " 天少於 " + limit + " 小時", 2);
-            if (overtime[2] > checks[2][i])
+            if (safeTime[2] >= checks[2][i])
                 item.setChecked(true);
             items.add(item);
         }
@@ -144,10 +151,9 @@ public class CheckActivity extends AppCompatActivity {
         for (CheckItem item : items)
             if (item.isChecked())
                 check_time++;
-        check_time = items.size() - check_time;
-        Collections.sort(items);
-        DebugTools.Log(items);
 
+        Collections.sort(items);
+//        DebugTools.Log(items);
     }
 
     public void BackParent(View view) {
